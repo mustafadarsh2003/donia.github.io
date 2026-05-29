@@ -1,0 +1,1368 @@
+import React, { useState, useEffect } from 'react';
+
+// Custom CSS styles with glowing animated circles, smooth gameplay, card flips, and absolute contrast
+const customPortalStyles = `
+  @keyframes fall {
+    0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.8; }
+    100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+  }
+  .rain-item {
+    position: fixed;
+    top: -50px;
+    z-index: 4;
+    pointer-events: none;
+    animation: fall linear forwards;
+    font-family: sans-serif;
+  }
+  @keyframes floatHeart {
+    0% { transform: translateY(0) scale(0.6) rotate(0deg); opacity: 0; }
+    15% { opacity: 1; }
+    100% { transform: translateY(-130px) scale(1.2) rotate(20deg); opacity: 0; }
+  }
+  @keyframes shakeCard {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+  @keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulseHeart {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.6)); }
+    50% { transform: scale(1.15); filter: drop-shadow(0 0 20px rgba(244, 63, 94, 0.95)); }
+  }
+  /* حركة دوائر الإضاءة الخلفية */
+  @keyframes floatGlowBg {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(40px, -60px) scale(1.15); }
+    66% { transform: translate(-30px, 30px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+  .animate-float-heart {
+    animation: floatHeart 2s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+  }
+  .animate-shake {
+    animation: shakeCard 0.4s ease-in-out;
+  }
+  .animate-fade-in-up {
+    animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-pulse-heart {
+    animation: pulseHeart 2s infinite ease-in-out;
+  }
+  /* تطبيق الحركة الدائرية للإضاءة */
+  .animate-glow-1 {
+    animation: floatGlowBg 10s infinite ease-in-out;
+  }
+  .animate-glow-2 {
+    animation: floatGlowBg 14s infinite ease-in-out 2s;
+  }
+  .animate-glow-3 {
+    animation: floatGlowBg 12s infinite ease-in-out 4s;
+  }
+  .custom-transition {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass-card-dark {
+    background: rgba(26, 16, 46, 0.65);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+  }
+  .glass-card-light {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    box-shadow: 0 10px 40px rgba(244, 63, 94, 0.08);
+  }
+  .custom-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: rgba(244, 63, 94, 0.3);
+    border-radius: 99px;
+  }
+`;
+
+const paternalPhrasesAndMessages = [
+  "ربنا يحميكي ويحفظك ليا يا نور عيون بابا وميحرمنيش من ضحكتك اللي بتنور دنيتنا كلها! 💖",
+  "انتي أحلى رزق وأجمل بنوتة ربنا وهبها ليا في الدنيا دي كلها، يا رب أشوفك دايماً أسعد الناس. ✨",
+  "يا رب يسعد قلبك الطيب ويبعد عنك أي زعل، ويفتحلك كل أبواب الخير والنجاح يا دنيتي. 🥰",
+  "كل دقيقة بتعدي وانتي منورة حياتي بتبقى عيد حقيقي في قلب بابا. ربنا يباركلي في عمرك يا رب. 🤲",
+  "انتي طفلتي الجميلة وصاحبتي الصدوقة اللي بنسى معاها أي تعب في الدنيا. بحبك أوي يا بنوتي. 👑",
+  "ربنا يكتبلك التوفيق والنجاح في كل خطوة في حياتك يا دنيتي، ويجعل دايماً طريقك منور وسهل. 🌟",
+  "افتكرِ دايماً إن بابا جنبك وفي ضهرك في كل لحظة، وسندك اللي مش هيتخلى عنك أبداً يا روحي. 🤝",
+  "اللهم اجعل الضحكة والابتسامة الحلوة دي متمشيش أبداً من على وشك الجميل، واكتبلك راحة البال والرضا. 🌸",
+  "انتي فخر بابا الحقيقي وأحلى حاجة حصلت في دنيتي كلها.. ربنا يسعدك دنيا وآخرة يا قمر عيلتنا. 🌙",
+  "يا رب ينور قلبك بالإيمان والقرآن، ويجعلك من الصالحات الطيبات اللي الكل بيحبهم وبيحترمهم. 🕋",
+  "ضحكتك دي بالنسبة لبابا بالدنيا وما فيها.. ربنا يفرح قلبك النقي دايماً وميشوفش فيكي أي مكروه. 💞",
+  "اللهم بارك في بنوتي الغالية واكتب لها السعادة والتوفيق أضعاف ما بتسعد قلبي بوجودها. 🥺",
+  "يا رب ارزق بنوتي وحبيبتي تيسير لكل عسير، وصحبة صالحة، وأيام هادية وجميلة زي جمال قلبها. 🌟",
+  "انتي فرحة العمر يا دنيتي، ربنا يحفظك من كل شر ومن كل عين ويحميكي في كل وقت ومكان. 🌸",
+  "كل خطوة نجاح ليكي هي أكبر فرحة لقلب بابا، ربنا يحققلك كل أحلامك وطموحاتك يا بطلة. 🎓",
+  "يا رب ارزق دنيتي راحة لا تنتهي، وتوفيق في دراستها وحياتها، وخليها دايماً البنت الطيبة المتربية. 🤲",
+  "لما بتضحكي الدنيا كلها بتضحك في عيون بابا، ربنا يديم عليكي الصحة والستر والبركة يا حبيبة أبوكي. 🥰",
+  "انتي العسل الصافي اللي بيحلي عمري.. ربنا يخليكي ليا يا أغلى هدية من ربنا. 🍬",
+  "يا رب املأ قلبها باليقين والطمأنينة واجعلها دايماً فخورة وناجحة وسعيدة في حياتها. ✨",
+  "ربنا يجعلك قرة عين ليا ويحفظك بحفظه المتين يا قطعة من روحي وعمري كله. ❤️",
+  "انتي شمس أيامي اللي مش بتغيب أبداً.. ربنا يفرحك ويسعدك بكل حاجة حلوة تتمنيها. ☀️",
+  "اللهم أرح قلب بنوتي وااصرف عنها الهم والحزن، واجعل أيامها الجاية كلها بشرى وفرحة. 🍃",
+  "حبي ليكي يا بنوتي زي البحر ملوش آخر، ربنا يديمك النعمة العظيمة اللي في حياتي. 🌍",
+  "يا رب أسعد دنيتي وحقق ليها كل أمنية صغيرة وكبيرة في قلبها، وارزقها الرضا والبركة دايماً. 💖",
+  "انتي أحلى بنوتة في الكوكب كله.. كلام الدنيا كله مش هيكفي يعبر عن فرحتي بيكي. 🥰",
+  "ربنا ينور بصيرتك ويرزقك الحكمة ويسر قلبك ويجعلك دايماً مميزة في كل حاجة بتعمليها. 🌟",
+  "يا رب يحفظك بحفظه الجميل ويديم عليكي ستره وجماله ولطفه يا قلب بابا وروحه. 💕",
+  "ربنا يجعل الخير دايماً في طريقك والناس الطيبة حواليكي والبركة في كل عمل بتعمليه. ✨",
+  "انتي أجمل ما رأت عيني.. ربي يسعدك ويوفقك ويخليكي دايماً البنت المتفوقة والمؤدبة الغالية. 👑",
+  "قلب بابا بيدعيلك في كل صلاة وكل وقت.. ربنا يقدرني دايماً أسعدك وأشوفك أحسن الناس. 🤲💖"
+];
+
+const quranicQuestionsColloquial = [
+  {
+    question: "إيه السورة اللي بنسميها 'عروس القرآن الكريم' يا دنيتي؟",
+    options: ["سورة الرحمن", "سورة يس", "سورة الواقعة", "سورة الملك"],
+    correct: 0,
+    hint: "السورة دي بتبدأ بـ 'الرَّحْمَنُ • عَلَّمَ الْقُرْآنَ' وليها نغمة جميلة تريح القلب 🌸"
+  },
+  {
+    question: "عارفة إيه هي أعظم آية في القرآن الكريم كله؟",
+    options: ["آية الدين", "آية الكرسي", "أواخر سورة البقرة", "فاتحة الكتاب"],
+    correct: 1,
+    hint: "موجودة في سورة البقرة وبنقراها دايماً للحفظ والبركة وبتبدأ بـ 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ' ✨"
+  },
+  {
+    question: "سورة قصيرة وجميلة أوي تعادل ثلث القرآن الكريم، تفتكري هي إيه؟",
+    options: ["سورة الإخلاص", "سورة الفلق", "سورة الكافرون", "سورة الناس"],
+    correct: 0,
+    hint: "سورة بتتكلم عن توحيد ربنا سبحانه وتعالى وبتقول 'قُلْ هُوَ اللَّهُ أَحَدٌ' 🕋"
+  },
+  {
+    question: "إيه السورة المنجية من عذاب القبر اللي بننصح نقراها كل يوم قبل النوم؟",
+    options: ["سورة الكهف", "سورة يس", "سورة الملك", "سورة السجدة"],
+    correct: 2,
+    hint: "بتبدأ بـ 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ' وبتشفع لصاحبها 👑"
+  },
+  {
+    question: "تفتكري عدد سور القرآن الكريم كام سورة?",
+    options: ["110 سورة", "114 سورة", "120 سورة", "108 سورة"],
+    correct: 1,
+    hint: "تبدأ بسورة الفاتحة وتنتهي بسورة الناس الطيبة 📖"
+  },
+  {
+    question: "إيه السورة اللي بنقول عليها 'قلب القرآن' وبنقراها لتيسير الأمور؟",
+    options: ["سورة الرحمن", "سورة يس", "سورة الواقعة", "سورة طه"],
+    correct: 1,
+    hint: "بتبدأ بحرفين بس: 'يس' وجزائها كبير أوي عند ربنا 💖"
+  },
+  {
+    question: "سورة وحيدة في المصحف مش بتبدأ بـ 'بسم الله الرحمن الرحيم'، عارفة هي إيه؟",
+    options: ["سورة التوبة", "سورة الأنفال", "سورة النمل", "سورة يوسف"],
+    correct: 0,
+    hint: "بتتسمى برضه سورة 'براءة' وبتيجي بعد سورة الأنفال علطول 📖"
+  }
+];
+
+const wordGameDatabase = [
+  { jumbled: "ة ح م ر", correct: "رحمة", hint: "صفة جميلة ربنا حطها في قلوب الناس وبابا بيحبها فيكي أوي" },
+  { jumbled: "ة ك ر ب", correct: "بركة", hint: "حاجة لما بتدخل حياتنا بتخلي القليل كتير والوقت مليان خير" },
+  { jumbled: "ل ا ؤ ف ت", correct: "تفاؤل", hint: "أننا دايماً نتوقع الخير من ربنا ونشوف بكرة أحسن وأجمل" },
+  { jumbled: "ة د ع ا س", correct: "سعادة", hint: "إحساس جميل بابا بيتمنى يملى بيه قلبك دايماً طول العمر" },
+  { jumbled: "ن م ا ي إ", correct: "إيمان", hint: "نور جوة القلب بيخلينا نحب ربنا ونعمل الخير دايماً" },
+  { jumbled: "ا ض ر", correct: "رضا", hint: "سر السعادة الحقيقي لما نكون مبسوطين بكل حاجة ربنا قسمها لنا" }
+];
+
+export default function App() {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Day/Night Theme State
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Live Timer State (Start date: April 29, 2026)
+  const [timeElapsed, setTimeElapsed] = useState({
+    years: 0,
+    months: 0,
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  const [memories, setMemories] = useState([]);
+  const [showMemoryModal, setShowMemoryModal] = useState(false);
+  
+  // New Memory inputs
+  const [newDate, setNewDate] = useState('');
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newIcon, setNewIcon] = useState('heart');
+
+  // Games Console Selection
+  const [activeTab, setActiveTab] = useState('match');
+  const [rewardMessage, setRewardMessage] = useState('');
+  const [floatingHearts, setFloatingHearts] = useState([]);
+
+  // GAME 1: Card Match Memory State
+  const [cards, setCards] = useState([]);
+  const [flippedCards, setFlippedCards] = useState([]);
+  const [matchedCards, setMatchedCards] = useState([]);
+
+  // GAME 2: Spin the Wheel State
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  // GAME 3: Islamic Quiz State
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [quizAnswered, setQuizAnswered] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+
+  // GAME 4: Unscramble Word Game State
+  const [currentWordIdx, setCurrentWordIdx] = useState(0);
+  const [wordInput, setWordInput] = useState('');
+  const [wordFeedback, setWordFeedback] = useState('');
+  const [showWordHint, setShowWordHint] = useState(false);
+
+  // GAME 5: Easy Tic-Tac-Toe State
+  const [board, setBoard] = useState(Array(9).fill(null));
+  const [isXNext, setIsXNext] = useState(true);
+  const [gameWinner, setGameWinner] = useState(null);
+
+  // GAME 6: 4x4 Mini Sudoku State
+  const sudokuInitial = [
+    [1, null, 3, 4],
+    [3, 4, null, 1],
+    [null, 1, 4, 3],
+    [4, 3, 1, null]
+  ];
+  const sudokuSolution = [
+    [1, 2, 3, 4],
+    [3, 4, 2, 1],
+    [2, 1, 4, 3],
+    [4, 3, 1, 2]
+  ];
+  const [sudokuBoard, setSudokuBoard] = useState(JSON.parse(JSON.stringify(sudokuInitial)));
+  const [sudokuSuccess, setSudokuSuccess] = useState(false);
+  const [sudokuFeedback, setSudokuFeedback] = useState('');
+
+  // Clock Update Function
+  const updateClock = () => {
+    const startDate = new Date('April 29, 2026 00:00:00').getTime();
+    const now = new Date().getTime();
+    const diff = now - startDate;
+
+    if (diff <= 0) {
+      setTimeElapsed({ years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
+
+    const s = 1000;
+    const m = s * 60;
+    const h = m * 60;
+    const day = h * 24;
+    const month = day * 30.44; 
+    const year = day * 365.25; 
+
+    const years = Math.floor(diff / year);
+    const months = Math.floor((diff % year) / month);
+    const days = Math.floor((diff % month) / day);
+    const hours = Math.floor((diff % day) / h);
+    const minutes = Math.floor((diff % h) / m);
+    const seconds = Math.floor((diff % m) / s);
+
+    setTimeElapsed({ years, months, days, hours, minutes, seconds });
+  };
+
+  // Auto-initialize games when activeTab changes
+  useEffect(() => {
+    if (activeTab === 'match') {
+      resetCardGame();
+    } else if (activeTab === 'tictactoe') {
+      resetTTTGame();
+    } else if (activeTab === 'sudoku') {
+      resetSudokuBoard();
+    }
+  }, [activeTab]);
+
+  // Initial Clock and Storage Load
+  useEffect(() => {
+    updateClock();
+    const clockTimer = setInterval(updateClock, 1000);
+
+    try {
+      const savedMemories = localStorage.getItem('donia_paternal_memories_v3');
+      if (savedMemories) {
+        setMemories(JSON.parse(savedMemories));
+      }
+    } catch (e) {
+      console.error("Failed to parse initial memories:", e);
+    }
+
+    return () => clearInterval(clockTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const hearts = ['❤️', '💖', '🌸', '💕', '💗', '🎀'];
+    const spawnHeart = () => {
+      const heartEl = document.createElement('div');
+      heartEl.className = 'rain-item';
+      heartEl.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+      heartEl.style.left = `${Math.random() * 100}vw`;
+      
+      const size = Math.random() * 14 + 12; 
+      const duration = Math.random() * 5 + 4; 
+      
+      heartEl.style.fontSize = `${size}px`;
+      heartEl.style.animationDuration = `${duration}s`;
+      heartEl.style.opacity = Math.random() * 0.4 + 0.5;
+
+      document.body.appendChild(heartEl);
+
+      setTimeout(() => {
+        heartEl.remove();
+      }, duration * 1000);
+    };
+
+    const rainInterval = setInterval(spawnHeart, 500);
+
+    return () => {
+      clearInterval(rainInterval);
+      document.querySelectorAll('.rain-item').forEach(el => el.remove());
+    };
+  }, [isAuthenticated]);
+
+  // Handle Protected Login Submit (Password: "دنيتي")
+  const handleProtectedLogin = (e) => {
+    e.preventDefault();
+    if (passwordInput.trim() === 'دنيتي') {
+      localStorage.setItem('donia_paternal_auth_v3', 'true');
+      setIsAuthenticated(true);
+      setLoginError(false);
+      triggerHeartsVisual();
+    } else {
+      setLoginError(true);
+      setTimeout(() => setLoginError(false), 500);
+    }
+  };
+
+  const triggerHeartsVisual = () => {
+    const freshHearts = Array.from({ length: 12 }).map((_, i) => ({
+      id: Date.now() + i,
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 40 + 40,
+      size: Math.random() * 15 + 15,
+      angle: Math.random() * 45 - 22,
+    }));
+    setFloatingHearts(prev => [...prev, ...freshHearts]);
+    setTimeout(() => {
+      setFloatingHearts(prev => prev.filter(h => !freshHearts.find(fh => fh.id === h.id)));
+    }, 2000);
+  };
+
+  const handleAddNewMemory = (e) => {
+    e.preventDefault();
+    if (!newDate || !newTitle || !newDesc) return;
+
+    const memoryItem = {
+      id: Date.now().toString(),
+      date: newDate,
+      title: newTitle,
+      description: newDesc,
+      iconType: newIcon
+    };
+
+    const updatedMemories = [...memories, memoryItem].sort((a, b) => new Date(a.date) - new Date(b.date));
+    setMemories(updatedMemories);
+    localStorage.setItem('donia_paternal_memories_v3', JSON.stringify(updatedMemories));
+
+    setNewDate('');
+    setNewTitle('');
+    setNewDesc('');
+    setNewIcon('heart');
+    setShowMemoryModal(false);
+    triggerHeartsVisual();
+    setRewardMessage("تسلم إيدك يا بنوتة بابا الغالية! تم حفظ ذكرى جديدة لرحلتنا وعالمنا الجميل 🌸");
+  };
+
+  const handleDeleteMemoryItem = (id) => {
+    const updated = memories.filter(m => m.id !== id);
+    setMemories(updated);
+    localStorage.setItem('donia_paternal_memories_v3', JSON.stringify(updated));
+    setRewardMessage("تم مسح الذكرى برقة وهدوء يا روحي 🍃");
+  };
+
+  const triggerRandomHeartfeltReward = (prefix = "") => {
+    const randomIndex = Math.floor(Math.random() * paternalPhrasesAndMessages.length);
+    setRewardMessage(prefix + paternalPhrasesAndMessages[randomIndex]);
+    triggerHeartsVisual();
+  };
+
+  /* ==================== GAME 1: CARD MATCH ==================== */
+  const resetCardGame = () => {
+    const baseIcons = ['🧁', '👑', '🌈', '🍭'];
+    const pairIcons = [...baseIcons, ...baseIcons];
+    const shuffled = pairIcons
+      .map((icon, idx) => ({ id: `${idx}-${Date.now()}`, icon }))
+      .sort(() => Math.random() - 0.5);
+
+    setCards(shuffled);
+    setFlippedCards([]);
+    setMatchedCards([]);
+  };
+
+  const handleCardClick = (idx) => {
+    if (flippedCards.includes(idx) || matchedCards.includes(idx) || flippedCards.length >= 2) return;
+
+    const newFlipped = [...flippedCards, idx];
+    setFlippedCards(newFlipped);
+
+    if (newFlipped.length === 2) {
+      const [firstIdx, secondIdx] = newFlipped;
+      if (cards[firstIdx].icon === cards[secondIdx].icon) {
+        setTimeout(() => {
+          const newMatched = [...matchedCards, firstIdx, secondIdx];
+          setMatchedCards(newMatched);
+          setFlippedCards([]);
+
+          if (newMatched.length === cards.length) {
+            triggerRandomHeartfeltReward("شطورة وذكية أوي يا دنيتي! خلصتي لعبة البطاقات بنجاح وسرعة.. ربي يحفظك ويسمع مني هذه الكلمات الجميلة: \n\n");
+          }
+        }, 400);
+      } else {
+        setTimeout(() => {
+          setFlippedCards([]);
+        }, 1000);
+      }
+    }
+  };
+
+  /* ==================== GAME 2: SPIN THE WHEEL ==================== */
+  const spinWheelOption = () => {
+    if (isSpinning) return;
+    setIsSpinning(true);
+    setRewardMessage('');
+
+    const randomRotations = 6 + Math.floor(Math.random() * 4);
+    const randomSectorIdx = Math.floor(Math.random() * 6);
+    const sectorAngle = 360 / 6;
+    const targetDegrees = (randomRotations * 360) + (360 - (randomSectorIdx * sectorAngle) - (sectorAngle / 2));
+    
+    setWheelRotation(targetDegrees);
+
+    setTimeout(() => {
+      setIsSpinning(false);
+      const wheelOutcomes = [
+        "نصيحة ذهبية من بابا الغالي 💛",
+        "رسالة دافئة تبهج قلبك الطيب 🤲",
+        "وعد من بابا بدعمك للنهاية 🤝",
+        "كلمة تفرح قلبك دايماً ⭐",
+        "كلمات ملهمة لراحة بالك وتوفيقك 🍃",
+        "حضن كبير من بابا ودعم دائم دايماً 🤗"
+      ];
+      const outcome = wheelOutcomes[randomSectorIdx];
+      const randomFatherSpeech = paternalPhrasesAndMessages[Math.floor(Math.random() * paternalPhrasesAndMessages.length)];
+      setRewardMessage(`🎡 العجلة وقفت عند: [ ${outcome} ] \n\n وبابا بيقولك من قلبه: ${randomFatherSpeech}`);
+      triggerHeartsVisual();
+    }, 4000);
+  };
+
+  /* ==================== GAME 3: ISLAMIC QURAN QUIZ ==================== */
+  const handleQuizOptionClick = (idx) => {
+    if (quizAnswered) return;
+    setSelectedOption(idx);
+    setQuizAnswered(true);
+
+    if (idx === quranicQuestionsColloquial[currentQuizIndex].correct) {
+      triggerRandomHeartfeltReward("ما شاء الله عليكي يا بنوتة بابا العبقرية! إجابتك صحيحة مية مية.. ربي يزيدك نور وعلم ويسمع مني هذه الكلمات الطيبة: \n\n");
+    } else {
+      setRewardMessage("محاولة طيبة يا دنيتي بس هي مش الإجابة الصح. الإجابة الصح هي: [" + quranicQuestionsColloquial[currentQuizIndex].options[quranicQuestionsColloquial[currentQuizIndex].correct] + "]. بابا بيكتبلك كلمة حلوة تفرح قلبك برضه وبيقولك: " + paternalPhrasesAndMessages[Math.floor(Math.random() * paternalPhrasesAndMessages.length)]);
+    }
+  };
+
+  const nextQuizQuestion = () => {
+    setSelectedOption(null);
+    setQuizAnswered(false);
+    setShowHint(false);
+    setRewardMessage('');
+    if (currentQuizIndex < quranicQuestionsColloquial.length - 1) {
+      setCurrentQuizIndex(prev => prev + 1);
+    } else {
+      setCurrentQuizIndex(0);
+      triggerRandomHeartfeltReward("الله أكبر! خلصتي اختبار بابا الديني الجميل كله.. ربنا يبارك في عقلِك وذكائِك ويجعلك دايماً نبتة صالحة وطيبة يا حبيبة بابا: \n\n");
+    }
+  };
+
+  /* ==================== GAME 4: UNSCRAMBLE THE WORD ==================== */
+  const checkUnscrambledWord = (e) => {
+    e.preventDefault();
+    const correctWord = wordGameDatabase[currentWordIdx].correct;
+    if (wordInput.trim() === correctWord) {
+      setWordFeedback("correct");
+      triggerRandomHeartfeltReward(`برافو يا دنيتي! خمنتي الكلمة صح وهي كلمة "${correctWord}".. ربنا يجعل حياتك كلها مليانة بالصفة الجميلة دي ويسمع مني هذه الرسالة الدافئة: \n\n`);
+    } else {
+      setWordFeedback("incorrect");
+    }
+  };
+
+  const nextUnscrambleWord = () => {
+    setWordInput('');
+    setWordFeedback('');
+    setShowWordHint(false);
+    setRewardMessage('');
+    setCurrentWordIdx((currentWordIdx + 1) % wordGameDatabase.length);
+  };
+
+  /* ==================== GAME 5: EASY TIC-TAC-TOE ==================== */
+  const checkTTTWinner = (squares) => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+    for (let i = 0; i < lines.length; i++) {
+      const [a, b, c] = lines[i];
+      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+        return squares[a];
+      }
+    }
+    if (squares.every(s => s !== null)) return 'Draw';
+    return null;
+  };
+
+  const makeSillyPapaAIMove = (currentBoard) => {
+    const emptyIndices = currentBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+    if (emptyIndices.length === 0) return;
+    return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+  };
+
+  const handleTTTClick = (index) => {
+    if (board[index] || gameWinner || !isXNext) return;
+
+    const newBoard = [...board];
+    newBoard[index] = 'X';
+    setBoard(newBoard);
+
+    const winner = checkTTTWinner(newBoard);
+    if (winner) {
+      setGameWinner(winner);
+      handleTTTEndGame(winner);
+      return;
+    }
+
+    setIsXNext(false);
+
+    setTimeout(() => {
+      const aiMove = makeSillyPapaAIMove(newBoard);
+      if (aiMove !== undefined) {
+        newBoard[aiMove] = 'O';
+        setBoard(newBoard);
+        const finalWinner = checkTTTWinner(newBoard);
+        if (finalWinner) {
+          setGameWinner(finalWinner);
+          handleTTTEndGame(finalWinner);
+        } else {
+          setIsXNext(true);
+        }
+      }
+    }, 450);
+  };
+
+  const handleTTTEndGame = (winner) => {
+    if (winner === 'X') {
+      triggerRandomHeartfeltReward("كسبتي بابا بجدارة وسرعة يا بطلة! دايماً شاطرة ومتميزة كدة يا رب.. ربنا يسعد قلبك ويسمع كلماتي الجميلة لكي: \n\n");
+    } else if (winner === 'O') {
+      setRewardMessage("بابا كسب المرة دي بالصدفة بس دايماً فوزك انتي هو فوز لبابا! تعالي نجرب تاني وبابا هيكتبلك كلمة حلوة تفرح قلبك برضه: \n\n" + paternalPhrasesAndMessages[Math.floor(Math.random() * paternalPhrasesAndMessages.length)]);
+    } else {
+      triggerRandomHeartfeltReward("التعادل معناه إننا متفاهمين ومنسجمين على طول الخط يا حبيبة بابا! ربي يحفظك ويسمع منك هذه الرسالة الدافئة: \n\n");
+    }
+  };
+
+  const resetTTTGame = () => {
+    setBoard(Array(9).fill(null));
+    setIsXNext(true);
+    setGameWinner(null);
+    setRewardMessage('');
+  };
+
+  /* ==================== GAME 6: 4x4 MINI SUDOKU ==================== */
+  const resetSudokuBoard = () => {
+    setSudokuBoard(JSON.parse(JSON.stringify(sudokuInitial)));
+    setSudokuSuccess(false);
+    setSudokuFeedback('');
+    setRewardMessage('');
+  };
+
+  const handleSudokuChange = (row, col, value) => {
+    if (sudokuInitial[row][col] !== null) return;
+    const valInt = parseInt(value, 10);
+    const newGrid = [...sudokuBoard];
+    
+    if (isNaN(valInt) || valInt < 1 || valInt > 4) {
+      newGrid[row][col] = null;
+    } else {
+      newGrid[row][col] = valInt;
+    }
+    setSudokuBoard(newGrid);
+  };
+
+  const verifySudokuPuzzle = () => {
+    let isCorrect = true;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (sudokuBoard[r][c] !== sudokuSolution[r][c]) {
+          isCorrect = false;
+          break;
+        }
+      }
+    }
+
+    if (isCorrect) {
+      setSudokuSuccess(true);
+      setSudokuFeedback('correct');
+      triggerRandomHeartfeltReward("الله عليكي يا عبقرية الأرقام! حليتي لغز أرقام السودوكو بنجاح باهر وبدون أي غلطة.. ربنا ينور طريقك يا دنيتي بالخير والذكاء دايماً: \n\n");
+    } else {
+      setSudokuFeedback('incorrect');
+    }
+  };
+
+  const renderIcon = (type) => {
+    const classStr = "w-4 h-4 text-rose-500";
+    switch (type) {
+      case 'heart':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className={classStr} fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        );
+      case 'sparkles':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className={classStr} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+        );
+      case 'gift':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className={classStr} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        );
+      default:
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className={classStr} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+        );
+    }
+  };
+
+  return (
+    <div className={`min-h-screen ${isDarkMode ? 'bg-[#130a24]' : 'bg-[#fff5f7]'} ${isDarkMode ? 'text-slate-100' : 'text-slate-800'} flex flex-col justify-between font-sans custom-transition selection:bg-rose-500/30 overflow-x-hidden relative`} dir="rtl">
+      
+      {/* Inject custom portal styles into document */}
+      <style dangerouslySetInnerHTML={{ __html: customPortalStyles }} />
+
+      {/* Background Animated Floating Glow Circles - Highly cheerful & colorful */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className={`absolute top-[10%] left-[5%] w-[45vw] h-[45vw] rounded-full ${isDarkMode ? 'bg-pink-700/15' : 'bg-pink-300/25'} blur-[110px] animate-glow-1`} />
+        <div className={`absolute top-[40%] right-[-10%] w-[50vw] h-[50vw] rounded-full ${isDarkMode ? 'bg-violet-800/15' : 'bg-violet-300/20'} blur-[130px] animate-glow-2`} />
+        <div className={`absolute bottom-[-10%] left-[10%] w-[40vw] h-[40vw] rounded-full ${isDarkMode ? 'bg-rose-600/15' : 'bg-rose-300/20'} blur-[120px] animate-glow-3`} />
+
+        {/* Floating Hearts */}
+        {floatingHearts.map(h => (
+          <div
+            key={h.id}
+            className="absolute animate-float-heart flex flex-col items-center"
+            style={{
+              left: `${h.x}%`,
+              bottom: `${h.y}%`,
+              fontSize: `${h.size}px`,
+              transform: `rotate(${h.angle}deg)`
+            }}
+          >
+            💖
+          </div>
+        ))}
+      </div>
+
+      {!isAuthenticated ? (
+        /* ==================== 1. PROTECTED LOGIN SCREEN (NO FOOTER) ==================== */
+        <div className="flex-1 flex flex-col items-center justify-center p-4 z-10">
+          <div className={`w-full max-w-md p-8 ${isDarkMode ? 'glass-card-dark' : 'glass-card-light'} rounded-3xl shadow-[0_0_50px_rgba(244,63,94,0.15)] text-center transition-all duration-500 hover:shadow-[0_0_60px_rgba(244,63,94,0.25)] ${loginError ? 'animate-shake border-red-500/50' : ''}`}>
+            
+            {/* Pulsing Crystal Heart Logo */}
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-tr from-pink-500/10 via-rose-600/20 to-violet-600/10 border border-pink-500/30 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(244,63,94,0.25)] relative overflow-hidden">
+              <div className="absolute inset-0 bg-pink-500/5 animate-pulse" />
+              <span className="text-5xl animate-pulse-heart filter drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]">💖</span>
+            </div>
+
+            <h1 className="text-3xl font-black bg-gradient-to-r from-pink-400 via-rose-500 to-violet-500 bg-clip-text text-transparent mb-3">
+              عالمنا السري ✨
+            </h1>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} mb-8 font-semibold leading-relaxed`}>
+              السر ده مقفول ومحدش في الكون يقدر يوصله أو يشوف اللي جواه... غير اللي يعرف كلمة سر قلبي ❤️
+            </p>
+
+            <form onSubmit={handleProtectedLogin} className="space-y-6">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="اكتبي كلمة سر قلبي هنا..."
+                  className={`w-full px-5 py-4 ${isDarkMode ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl border focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-center tracking-wide font-bold text-base shadow-sm`}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542 7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {loginError && (
+                <div className="text-rose-500 bg-rose-500/10 border border-rose-500/20 py-3 px-4 rounded-xl text-xs font-bold leading-relaxed animate-shake">
+                  كلمة السر مش صحيحة! جربي تاني من غير تسرع يا دنيتي...
+                  <span className="block text-[11px] mt-1 text-pink-600">تلميح صغير: الكلمة هي "دنيتي" 😉</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 hover:from-pink-600 hover:to-violet-700 text-white font-bold rounded-xl shadow-[0_4px_25px_rgba(244,63,94,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] text-base"
+              >
+                افتحي عالمنا السري 🔓
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : (
+        /* ==================== MAIN APPLICATION CONTENT ==================== */
+        <div className="flex-1 flex flex-col z-10 animate-fade-in-up">
+          
+          {/* Top Bar with theme toggle icon */}
+          <div className="max-w-6xl w-full mx-auto px-6 py-4 flex justify-end">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`p-2.5 rounded-xl border ${isDarkMode ? 'bg-[#1e1338] border-white/10 text-yellow-400 hover:bg-white/10' : 'bg-pink-100 border-pink-200 text-slate-800 hover:bg-pink-200'} custom-transition shadow-sm flex items-center justify-center`}
+              title={isDarkMode ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"}
+            >
+              {isDarkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 5a7 7 0 100 14 7 7 0 000-14z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          <main className="max-w-6xl w-full mx-auto px-4 py-4 lg:py-6 space-y-10 flex-1">
+            
+            {/* Headlining primary quote with pulsing heart */}
+            <div className="text-center space-y-4">
+              <div className="inline-block text-5xl lg:text-6xl animate-pulse-heart select-none mb-1">💖</div>
+              <h2 className="text-3xl lg:text-5xl font-black bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 bg-clip-text text-transparent">
+                كل ثانية بتعدي معاكي يا دنيتي هي فرحة لقلبي! ✨
+              </h2>
+              <p className={`max-w-xl mx-auto text-xs lg:text-sm font-semibold leading-relaxed ${isDarkMode ? 'text-slate-300/90' : 'text-slate-700'}`}>
+                بوابتكِ الخاصة.. بنعد الوقت اللي بينا، ونسجل ذكرياتنا الفريدة، ونلعب مع بعض عشان تكسبي رسائل جميلة وكلمات طيبة تسعد قلبكِ!
+              </p>
+            </div>
+
+            {/* ==================== 2. TIMER SECTION ==================== */}
+            <section className={`rounded-3xl p-6 lg:p-10 shadow-xl border ${isDarkMode ? 'glass-card-dark' : 'glass-card-light'} text-center relative overflow-hidden custom-transition`}>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-violet-500/10 rounded-full blur-2xl pointer-events-none" />
+              
+              <div className="relative">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                  {[
+                    { label: 'سنة', val: timeElapsed.years },
+                    { label: 'شهر', val: timeElapsed.months },
+                    { label: 'يوم', val: timeElapsed.days },
+                    { label: 'ساعة', val: timeElapsed.hours },
+                    { label: 'دقيقة', val: timeElapsed.minutes },
+                    { label: 'ثانية', val: timeElapsed.seconds }
+                  ].map((unit) => (
+                    <div 
+                      key={unit.label} 
+                      className={`${isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-white border-pink-200'} border rounded-2xl p-4 lg:p-6 shadow-sm relative overflow-hidden group hover:border-pink-500/30 transition-all duration-300`}
+                    >
+                      <span className="block text-3xl lg:text-5xl font-black text-rose-500 tracking-tight drop-shadow-md mb-1 tabular-nums">
+                        {String(unit.val).padStart(2, '0')}
+                      </span>
+                      <span className={`text-xs font-black ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} group-hover:text-rose-500 transition-colors`}>
+                        {unit.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* TWO COLUMN GRID: MEMORIES ARCHIVE & PLAYGROUND */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* ==================== 3. TIMELINE ==================== */}
+              <section className={`lg:col-span-7 rounded-3xl p-6 lg:p-8 space-y-6 relative border ${isDarkMode ? 'glass-card-dark' : 'glass-card-light'} max-h-[850px] flex flex-col custom-transition`}>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className={`text-xl lg:text-2xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'} flex items-center space-x-2 space-x-reverse`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>شريط ذكرياتنا الفريدة</span>
+                    </h3>
+                    <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} font-bold`}>سجلي هنا كل قصة حلوة عدينا بيها سوا وبابا هيحفظهالك للأبد.</p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowMemoryModal(true)}
+                    className="flex items-center space-x-1 space-x-reverse px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-black rounded-xl shadow-[0_4px_15px_rgba(244,63,94,0.15)] transition-all hover:scale-[1.03]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>تسجيل ذكرى جديدة</span>
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto pl-2 flex-1 custom-scroll space-y-6 max-h-[600px] text-right">
+                  {memories.length === 0 ? (
+                    <div className={`text-center py-16 ${isDarkMode ? 'bg-slate-900/20 border-white/5 text-slate-400' : 'bg-pink-50/20 border-pink-200 text-slate-700'} border border-dashed rounded-2xl p-6`}>
+                      <div className="w-16 h-16 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.232.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <p className="font-black text-sm">شريط الذكريات لسة فاضي يا دنيتي!</p>
+                      <p className="text-xs mt-1 text-slate-500">اضغطي فوق على "تسجيل ذكرى جديدة" واكتبي أول ذكرى عشان نحتفظ بيها هنا.</p>
+                    </div>
+                  ) : (
+                    <div className="relative border-r-2 border-dashed border-rose-500/30 pr-6 mr-4 space-y-8 py-4">
+                      {memories.map((milestone) => (
+                        <div key={milestone.id} className="relative group">
+                          
+                          <div className={`absolute -right-[37px] top-0.5 ${isDarkMode ? 'bg-[#130a24]' : 'bg-[#fff5f7]'} border-2 border-rose-500/50 rounded-full w-8 h-8 flex items-center justify-center shadow-[0_0_15px_rgba(244,63,94,0.3)] z-10 group-hover:scale-110 group-hover:border-rose-400 transition-all duration-300`}>
+                            {renderIcon(milestone.iconType)}
+                          </div>
+
+                          <div className={`p-5 rounded-2xl relative transition-all duration-300 hover:scale-[1.01] ${isDarkMode ? 'bg-[#1d1238]/80 border border-white/5 hover:border-pink-500/40' : 'bg-white border border-pink-200 hover:border-pink-300'} shadow-sm`}>
+                            
+                            <button
+                              onClick={() => handleDeleteMemoryItem(milestone.id)}
+                              className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all"
+                              title="حذف هذه الذكرى"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+
+                            <div className="space-y-2">
+                              <span className="inline-block text-xs font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full">
+                                {new Date(milestone.date).toLocaleDateString('ar-EG', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                              <h4 className={`text-base lg:text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                                {milestone.title}
+                              </h4>
+                              <p className={`text-xs lg:text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                                {milestone.description}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* ==================== 4. PLAYGROUND CONSOLE ==================== */}
+              <section className={`lg:col-span-5 rounded-3xl p-6 lg:p-8 space-y-6 border ${isDarkMode ? 'glass-card-dark' : 'glass-card-light'} flex flex-col justify-between min-h-[650px] text-right relative custom-transition`}>
+                
+                <div className="space-y-1">
+                  <h3 className={`text-xl lg:text-2xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'} flex items-center space-x-2 space-x-reverse`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>ركن ألعاب دنيتي وبابا 🎮</span>
+                  </h3>
+                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} font-bold`}>
+                    اختارِي اللعبة اللي تحبيها، والعبِيها صح وتحصلي على كلمات جميلة ورسائل دافئة تطيب خاطركِ!
+                  </p>
+                </div>
+
+                {/* Tab layout with maximum visibility in both Light and Dark Modes */}
+                <div className={`grid grid-cols-3 gap-2 p-1.5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-white/5' : 'bg-pink-100/50 border-pink-200/60'}`}>
+                  {[
+                    { id: 'match', label: 'تطابق البطاقات' },
+                    { id: 'wheel', label: 'عجلة الحظ' },
+                    { id: 'quiz', label: 'سؤال وجواب' },
+                    { id: 'unscramble', label: 'ترتيب الحروف' },
+                    { id: 'tictactoe', label: 'إكس أو ضد بابا' },
+                    { id: 'sudoku', label: 'سودوكو دنيتي' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => { setActiveTab(tab.id); setRewardMessage(''); }}
+                      className={`py-2 px-1 text-[11px] font-black rounded-xl transition-all text-center ${
+                        activeTab === tab.id 
+                          ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-md' 
+                          : isDarkMode 
+                            ? 'text-slate-300 hover:text-white bg-slate-900/20' 
+                            : 'text-slate-700 hover:text-rose-600 bg-white hover:bg-pink-100/60 border border-pink-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={`${isDarkMode ? 'bg-[#1e1338]/60 border-white/5' : 'bg-pink-50/40 border-pink-200'} border rounded-2xl p-4 lg:p-6 min-h-[340px] flex flex-col justify-center`}>
+                  
+                  {activeTab === 'match' && (
+                    <div className="space-y-4">
+                      <div className={`flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} mb-2 font-black`}>
+                        <span>أزواج متطابقة: {matchedCards.length / 2} / 4</span>
+                        <button onClick={resetCardGame} className="text-rose-500 hover:underline">إعادة اللعب 🔄</button>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 gap-3 animate-[slideUpFade_0.3s_ease]">
+                        {cards.map((card, idx) => {
+                          const isFlipped = flippedCards.includes(idx) || matchedCards.includes(idx);
+                          return (
+                            <div
+                              key={card.id}
+                              onClick={() => handleCardClick(idx)}
+                              className={`aspect-square cursor-pointer rounded-2xl flex items-center justify-center text-2xl transition-all duration-300 ${
+                                isFlipped 
+                                  ? 'bg-gradient-to-tr from-pink-500 to-rose-600 text-white shadow-inner scale-95' 
+                                  : isDarkMode 
+                                    ? 'bg-[#2a1c4a] text-rose-300 hover:bg-[#392862] border border-pink-500/20' 
+                                    : 'bg-white text-rose-600 hover:bg-pink-100/80 border border-pink-300 shadow-sm'
+                              }`}
+                            >
+                              {isFlipped ? card.icon : '❓'}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'wheel' && (
+                    <div className="flex flex-col items-center space-y-6">
+                      <div className="relative w-44 h-44">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-2xl filter drop-shadow animate-bounce">
+                          👇
+                        </div>
+                        <div
+                          className="w-full h-full rounded-full border-4 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.2)] overflow-hidden relative"
+                          style={{
+                            transform: `rotate(${wheelRotation}deg)`,
+                            transition: isSpinning ? 'transform 4s cubic-bezier(0.15, 0.85, 0.3, 1)' : 'none',
+                            background: 'conic-gradient(from 0deg, #f43f5e 0deg 60deg, #8b5cf6 60deg 120deg, #3b82f6 120deg 180deg, #06b6d4 180deg 240deg, #10b981 240deg 300deg, #eab308 300deg 360deg)'
+                          }}
+                        >
+                          {[1, 2, 3, 4, 5, 6].map((num, i) => (
+                            <div
+                              key={i}
+                              className="absolute w-full h-full text-center flex items-center justify-center text-[9px] font-black text-white pointer-events-none"
+                              style={{
+                                transform: `rotate(${i * 60}deg)`,
+                                clipPath: 'polygon(50% 50%, 100% 12%, 100% 88%)'
+                              }}
+                            >
+                              <span className="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={spinWheelOption}
+                        disabled={isSpinning}
+                        className="px-6 py-2.5 bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 hover:from-pink-600 hover:to-violet-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95"
+                      >
+                        {isSpinning ? "جاري البحث..." : "لفي العجلة السحرية 💫"}
+                      </button>
+                    </div>
+                  )}
+
+                  {activeTab === 'quiz' && (
+                    <div className="space-y-4 text-right">
+                      <div className={`flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} font-bold`}>
+                        <span>السؤال {currentQuizIndex + 1} من {quranicQuestionsColloquial.length}</span>
+                      </div>
+                      
+                      <div className={`${isDarkMode ? 'bg-[#22153d]/50 border-white/5' : 'bg-white border-pink-200'} p-4 rounded-xl border`}>
+                        <p className={`text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-800'} leading-relaxed`}>
+                          {quranicQuestionsColloquial[currentQuizIndex].question}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        {quranicQuestionsColloquial[currentQuizIndex].options.map((option, idx) => {
+                          let btnClass = isDarkMode 
+                            ? "bg-slate-900/60 border border-white/10 text-slate-300 hover:bg-slate-800/80"
+                            : "bg-white border border-pink-200 text-slate-800 hover:bg-pink-100/50 shadow-sm";
+                          if (quizAnswered) {
+                            if (idx === quranicQuestionsColloquial[currentQuizIndex].correct) {
+                              btnClass = isDarkMode 
+                                ? "bg-emerald-950/40 border-emerald-500 text-emerald-300 font-bold"
+                                : "bg-emerald-100 border-emerald-400 text-emerald-800 font-bold";
+                            } else if (selectedOption === idx) {
+                              btnClass = isDarkMode 
+                                ? "bg-rose-950/40 border-rose-500 text-rose-300"
+                                : "bg-rose-100 border-rose-400 text-rose-800";
+                            } else {
+                              btnClass = isDarkMode 
+                                ? "bg-slate-950/40 border-white/5 text-slate-500"
+                                : "bg-slate-100 border-slate-200 text-slate-400";
+                            }
+                          }
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => handleQuizOptionClick(idx)}
+                              disabled={quizAnswered}
+                              className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-right transition-all flex items-center justify-between ${btnClass}`}
+                            >
+                              <span>{option}</span>
+                              {quizAnswered && idx === quranicQuestionsColloquial[currentQuizIndex].correct && (
+                                <span className={isDarkMode ? "text-emerald-400 font-bold" : "text-emerald-600 font-bold"}>إجابة صحيحة ✓</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowHint(!showHint)}
+                          className="text-xs text-pink-500 hover:underline font-bold"
+                        >
+                          {showHint ? "خبي المساعدة 💡" : "عايزة تلميح من بابا؟ 💡"}
+                        </button>
+                        {quizAnswered && (
+                          <button
+                            type="button"
+                            onClick={nextQuizQuestion}
+                            className="px-4 py-2 bg-pink-500/20 border border-pink-500/40 hover:border-pink-500 text-xs font-black text-pink-500 rounded-lg hover:text-white"
+                          >
+                            {currentQuizIndex < quranicQuestionsColloquial.length - 1 ? "السؤال التالي ⟵" : "إنهاء الاختبار 🎉"}
+                          </button>
+                        )}
+                      </div>
+
+                      {showHint && (
+                        <p className={`text-[11px] ${isDarkMode ? 'text-slate-300 bg-slate-950/60 border-pink-500/10' : 'text-slate-800 bg-white border-pink-200'} p-2.5 rounded-lg border italic leading-relaxed`}>
+                          {quranicQuestionsColloquial[currentQuizIndex].hint}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'unscramble' && (
+                    <div className="space-y-4 text-right">
+                      <div className={`${isDarkMode ? 'bg-[#22153d]/50 border-white/5' : 'bg-white border-pink-200'} p-4 rounded-xl border text-center`}>
+                        <span className="block text-[10px] text-slate-400 font-bold mb-1">رتبي الحروف المتبعثرة دي لتكتشفي كلمة طيبة:</span>
+                        <p className="text-2xl font-black text-rose-500 tracking-widest leading-relaxed">
+                          {wordGameDatabase[currentWordIdx].jumbled}
+                        </p>
+                      </div>
+
+                      <form onSubmit={checkUnscrambledWord} className="space-y-2">
+                        <input
+                          type="text"
+                          value={wordInput}
+                          onChange={(e) => setWordInput(e.target.value)}
+                          placeholder="اكتبي الكلمة الصحيحة هنا..."
+                          className={`w-full px-4 py-3 ${isDarkMode ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/50`}
+                        />
+                        <button
+                          type="submit"
+                          className="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-black rounded-xl text-xs hover:scale-[1.01]"
+                        >
+                          تحقق من الكلمة 🌟
+                        </button>
+                      </form>
+
+                      {wordFeedback === "incorrect" && (
+                        <p className="text-[11px] text-center text-rose-500 font-bold">محاولة تانية.. بابا متأكد إنك هتعرفيها!</p>
+                      )}
+
+                      <div className="flex justify-between items-center pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowWordHint(!showWordHint)}
+                          className="text-xs text-pink-500 hover:underline font-bold"
+                        >
+                          {showWordHint ? "خبي المساعدة 💡" : "عايزة تلميح من بابا؟ 💡"}
+                        </button>
+                        {wordFeedback === "correct" && (
+                          <button
+                            type="button"
+                            onClick={nextUnscrambleWord}
+                            className="px-4 py-2 bg-pink-500/20 border border-pink-500/40 text-xs font-black text-pink-500 rounded-lg"
+                          >
+                            الكلمة التالية ⟵
+                          </button>
+                        )}
+                      </div>
+
+                      {showWordHint && (
+                        <p className={`text-[11px] ${isDarkMode ? 'text-slate-300 bg-slate-950/60 border-pink-500/10' : 'text-slate-800 bg-white border-pink-200'} p-2.5 rounded-lg border italic`}>
+                          تلميح بابا الصغير: {wordGameDatabase[currentWordIdx].hint}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'tictactoe' && (
+                    <div className="space-y-4">
+                      <div className={`flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} font-bold`}>
+                        <span>أنتِ بـ (X) وبابا بـ (O)</span>
+                        <button onClick={resetTTTGame} className="text-rose-500 hover:underline">إعادة اللعب 🔄</button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 w-48 h-48 mx-auto">
+                        {board.map((cell, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleTTTClick(idx)}
+                            className={`w-full h-full rounded-xl flex items-center justify-center text-2xl font-black border transition-all ${
+                              cell === 'X' 
+                                ? 'bg-pink-500/20 border-pink-500 text-pink-500 shadow-inner' 
+                                : cell === 'O' 
+                                  ? 'bg-violet-500/20 border-violet-500 text-violet-500 shadow-inner' 
+                                  : isDarkMode 
+                                    ? 'bg-[#180d32] border-white/5 hover:bg-[#25154c]' 
+                                    : 'bg-white border-pink-200 hover:bg-pink-100/50 text-slate-800 shadow-sm'
+                            }`}
+                          >
+                            {cell}
+                          </button>
+                        ))}
+                      </div>
+
+                      {gameWinner && (
+                        <div className="text-center">
+                          <p className="text-xs font-black text-rose-500">
+                            {gameWinner === 'X' ? '🎉 كسبتي بابا يا بطلة!' : gameWinner === 'O' ? '🤝 بابا كسب المرة دي!' : '🤝 اللعبة خلصت تعادل جميل!'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'sudoku' && (
+                    <div className="space-y-4 text-right">
+                      <div className={`flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} font-bold`}>
+                        <span>املئي المربعات بالأرقام من 1 لـ 4</span>
+                        <button onClick={resetSudokuBoard} className="text-rose-500 hover:underline">إعادة البدء 🔄</button>
+                      </div>
+
+                      <div className={`grid grid-cols-4 gap-2 w-44 h-44 mx-auto ${isDarkMode ? 'bg-[#1e113c]' : 'bg-pink-100/50'} p-2 rounded-xl border ${isDarkMode ? 'border-white/5' : 'border-pink-200'}`}>
+                        {sudokuBoard.map((row, rIdx) => 
+                          row.map((cell, cIdx) => {
+                            const isReadOnly = sudokuInitial[rIdx][cIdx] !== null;
+                            return (
+                              <input
+                                key={`${rIdx}-${cIdx}`}
+                                type="text"
+                                maxLength={1}
+                                disabled={isReadOnly || sudokuSuccess}
+                                value={cell || ''}
+                                onChange={(e) => handleSudokuChange(rIdx, cIdx, e.target.value)}
+                                className={`w-full h-full text-center text-lg font-black rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-400 ${
+                                  isReadOnly 
+                                    ? isDarkMode 
+                                      ? 'bg-slate-800/60 text-slate-400 cursor-not-allowed' 
+                                      : 'bg-pink-200/80 text-slate-600 cursor-not-allowed border border-pink-300'
+                                    : isDarkMode 
+                                      ? 'bg-slate-900 text-pink-400 border border-pink-500/20' 
+                                      : 'bg-white text-pink-600 border border-pink-300 shadow-inner'
+                                }`}
+                              />
+                            );
+                          })
+                        )}
+                      </div>
+
+                      <div className="text-center space-y-2">
+                        <button
+                          onClick={verifySudokuPuzzle}
+                          disabled={sudokuSuccess}
+                          className="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-600 disabled:opacity-50 text-white font-black rounded-xl text-xs hover:scale-[1.02] shadow-md"
+                        >
+                          تحقق من الحل 🏆
+                        </button>
+                        
+                        {sudokuFeedback === 'incorrect' && (
+                          <p className="text-[11px] text-rose-500 font-black">امم.. في رقم مش في مكانه الصح يا دنيتي، راجعي الصفوف والأعمدة وجربي تاني!</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                {rewardMessage && (
+                  <div className="mt-4 bg-gradient-to-tr from-pink-950/30 to-violet-950/30 border border-pink-500/20 p-5 rounded-2xl animate-[fadeIn_0.3s_ease-out_forwards] text-right shadow-sm">
+                    <span className="inline-block text-[10px] font-black uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2.5 py-1 rounded-full mb-2">
+                      💝 رسالة حب وكلمة من قلب بابا:
+                    </span>
+                    <p className={`text-xs lg:text-sm font-bold ${isDarkMode ? 'text-rose-100' : 'text-slate-800'} leading-relaxed whitespace-pre-line`}>
+                      {rewardMessage}
+                    </p>
+                  </div>
+                )}
+
+              </section>
+            </div>
+          </main>
+
+          {/* ==================== FOOTER ==================== */}
+          <footer className={`border-t ${isDarkMode ? 'border-white/5 bg-[#090412]/90' : 'border-pink-200/50 bg-[#fff1f3]/70'} py-8 backdrop-blur-md z-10 text-center space-y-2 mt-auto custom-transition`}>
+            <p className="text-sm lg:text-base font-black bg-gradient-to-r from-pink-500 via-rose-500 to-violet-500 bg-clip-text text-transparent">
+              صنع بكل حب لبنوتى قلب بابا و دنيته ❤️
+            </p>
+            <p className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-600'} font-bold`}>
+              دنيتي الغالية.. ركننا السري الآمن وحارس ذكرياتنا وضحكاتنا الطيبة دايماً.
+            </p>
+          </footer>
+        </div>
+      )}
+
+      {/* ==================== MODAL: RECORD NEW MEMORY ==================== */}
+      {showMemoryModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]">
+          <div className={`w-full max-w-lg ${isDarkMode ? 'glass-card-dark' : 'glass-card-light'} rounded-3xl p-6 lg:p-8 space-y-6 relative shadow-[0_0_50px_rgba(244,63,94,0.2)] animate-[scaleIn_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] text-right`}>
+            
+            <button
+              onClick={() => setShowMemoryModal(false)}
+              className="absolute top-5 left-5 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="space-y-1">
+              <h4 className="text-xl lg:text-2xl font-black text-rose-500 flex items-center space-x-2 space-x-reverse">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>تسجيل ذكرى جديدة مع بابا</span>
+              </h4>
+              <p className="text-xs text-slate-400">اكتبي هنا اليوم السعيد أو المناسبة عشان نفضل فاكرينها سوا يا روحي.</p>
+            </div>
+
+            <form onSubmit={handleAddNewMemory} className="space-y-5">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-400">تاريخ الذكرى</label>
+                  <input
+                    type="date"
+                    required
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className={`w-full px-4 py-3 ${isDarkMode ? 'bg-[#180d32] border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50`}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-400">الرمز التعبيري للذكرى</label>
+                  <select
+                    value={newIcon}
+                    onChange={(e) => setNewIcon(e.target.value)}
+                    className={`w-full px-4 py-3 ${isDarkMode ? 'bg-[#1e1335] border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-right`}
+                  >
+                    <option value="heart">❤️ حب جوهري وحنان</option>
+                    <option value="sparkles">✨ نجوم ولمعة</option>
+                    <option value="gift">🎁 هدية حلوة</option>
+                    <option value="star">⭐ علامة بابا الذهبية</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400">عنوان الذكرى</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: يوم ما كسبت بابا في اللعبة 🏆"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className={`w-full px-4 py-3 ${isDarkMode ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-right`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400">إيه اللي حصل في اليوم ده؟</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="اكتبي التفاصيل اللي حابة نفضل فاكرينها سوا..."
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={`w-full px-4 py-3 ${isDarkMode ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none text-right`}
+                />
+              </div>
+
+              <div className="flex space-x-3 space-x-reverse pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-black rounded-xl shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all hover:scale-[1.02]"
+                >
+                  حفظ في ذاكرتنا المشتركة 💖
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMemoryModal(false)}
+                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-xl transition-all border border-white/10 text-center"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
