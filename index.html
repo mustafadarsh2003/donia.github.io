@@ -87,6 +87,76 @@
         .animate-shake {
             animation: shakeCard 0.4s ease-in-out;
         }
+
+        /* ستايل دوران عجلة الحظ بقيم مخصصة */
+        .wheel-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto;
+        }
+        .wheel-body {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #f43f5e;
+            position: relative;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1);
+            background: #1e1b4b;
+        }
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            left: 0;
+            top: 0;
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #f43f5e;
+            z-index: 50;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        /* بطاقات الذاكرة ثلاثية الأبعاد خفيفة الوزن للمطابقة */
+        .memory-card {
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .memory-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .memory-card.flipped .memory-card-inner {
+            transform: rotateY(180deg);
+        }
+        .memory-card-front, .memory-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+        }
+        .memory-card-back {
+            transform: rotateY(180deg);
+        }
     </style>
 </head>
 <body class="bg-[#130a24] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-rose-500/30 custom-transition relative">
@@ -110,12 +180,12 @@
             <h1 class="text-3xl font-black bg-gradient-to-r from-pink-400 via-rose-500 to-violet-500 bg-clip-text text-transparent mb-3">عالمنا السري ✨</h1>
             <p class="text-sm text-slate-300 mb-8 font-semibold leading-relaxed">السر ده مقفول ومحدش في الكون يقدر يوصله أو يشوف اللي جواه... غير اللي يعرف كلمة سر قلبي ❤️</p>
 
-            <form id="loginForm" class="space-y-6">
+            <form id="loginForm" class="space-y-6" onsubmit="handleLogin(event)">
                 <div class="relative">
                     <input type="password" id="passwordInput" placeholder="اكتبي كلمة سر قلبي هنا..." class="w-full px-5 py-4 bg-slate-900/60 border border-white/10 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-center tracking-wide font-bold text-base shadow-sm" required>
                 </div>
                 <div id="loginError" class="text-rose-500 bg-rose-500/10 border border-rose-500/20 py-3 px-4 rounded-xl text-xs font-bold leading-relaxed hidden">
-                    كلمة السر مش صحيحة! جربي تاني من غير تسرع يا دنيتي...
+                    كلمة السر مش صحيحة! جربي تاني من غير تسرع يا دنيتي... (تلميح: جربي اسمكِ الجميل "دنيا" أو "دنيتي")
                 </div>
                 <button type="submit" class="w-full py-4 bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 hover:from-pink-600 hover:to-violet-700 text-white font-bold rounded-xl shadow-[0_4px_25px_rgba(244,63,94,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] text-base">افتحي عالمنا السري 🔓</button>
             </form>
@@ -126,13 +196,13 @@
     <div id="main-content" class="opacity-0 transition-opacity duration-1000 z-10 flex flex-col justify-between flex-grow hidden">
         
         <!-- شريط التحكم العلوي المخصص -->
-        <div class="max-w-6xl w-full mx-auto px-6 py-4 flex justify-end">
-            <button id="themeToggle" class="p-2.5 rounded-xl border bg-[#1e1338] border-white/10 text-yellow-400 hover:bg-white/10 custom-transition shadow-sm flex items-center justify-center">
+        <div class="max-w-6xl w-full mx-auto px-6 py-4 flex justify-end items-center">
+            <button id="themeToggle" onclick="toggleTheme()" class="p-2.5 rounded-xl border bg-[#1e1338] border-white/10 text-yellow-400 hover:bg-white/10 custom-transition shadow-sm flex items-center justify-center">
                 <!-- أيقونة النهار والليل -->
                 <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 5a7 7 0 100 14 7 7 0 000-14z" />
                 </svg>
-                <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
             </button>
@@ -143,7 +213,7 @@
             <!-- المقدمة الرئيسية -->
             <div class="text-center space-y-4">
                 <div class="inline-block text-5xl lg:text-6xl animate-pulse-heart select-none mb-1">💖</div>
-                <h2 class="text-3xl lg:text-5xl font-black bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 bg-clip-text text-transparent">
+                <h2 class="text-3xl lg:text-5xl font-black bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 bg-clip-text text-transparent leading-tight">
                     كل ثانية بتعدي معاكي يا دنيتي هي فرحة لقلبي! ✨
                 </h2>
                 <p id="subQuote" class="max-w-xl mx-auto text-xs lg:text-sm font-semibold leading-relaxed text-slate-300/90">
@@ -157,6 +227,7 @@
                 <div class="absolute bottom-0 left-0 w-32 h-32 bg-violet-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 
                 <div class="relative">
+                    <p class="text-xs text-rose-400 font-bold mb-4">الزمن بيمر وجماله بيزيد معاكي من يوم ٢٩ أبريل ٢٠٢٦: 💖</p>
                     <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                         <div class="timer-card border rounded-2xl p-4 lg:p-6 shadow-sm relative overflow-hidden group bg-slate-900/60 border-white/5 hover:border-pink-500/30 transition-all duration-300">
                             <span id="yearsVal" class="block text-3xl lg:text-5xl font-black text-rose-500 tracking-tight drop-shadow-md mb-1 tabular-nums">00</span>
@@ -191,18 +262,18 @@
                 
                 <!-- شريط الذكريات المخصص والمحفوظ -->
                 <section id="memoriesTimeline" class="lg:col-span-7 rounded-3xl p-6 lg:p-8 space-y-6 relative border glass-card-dark max-h-[850px] flex flex-col custom-transition">
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="space-y-1">
                             <h3 id="timelineTitle" class="text-xl lg:text-2xl font-black text-white flex items-center space-x-2 space-x-reverse">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <span>شريط ذكرياتنا الفريدة</span>
+                                <span>شريط ذكرياتنا الفريدة 📅</span>
                             </h3>
                             <p id="timelineDesc" class="text-xs text-slate-400 font-bold">سجلي هنا كل قصة حلوة عدينا بيها سوا وبابا هيحفظهالك للأبد.</p>
                         </div>
-                        <button id="openMemoryModal" class="flex items-center space-x-1 space-x-reverse px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-black rounded-xl shadow-[0_4px_15px_rgba(244,63,94,0.15)] transition-all hover:scale-[1.03]">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <button onclick="toggleModal(true)" class="flex items-center justify-center space-x-1 space-x-reverse px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-black rounded-xl shadow-[0_4px_15px_rgba(244,63,94,0.15)] transition-all hover:scale-[1.03]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                             </svg>
                             <span>تسجيل ذكرى جديدة</span>
@@ -211,6 +282,7 @@
 
                     <div id="memoriesList" class="overflow-y-auto pl-2 flex-grow custom-scroll space-y-6 max-h-[600px] text-right">
                         <!-- تُضاف ذكريات المستخدم ديناميكياً هنا -->
+                        <div class="text-center py-12 text-slate-400 font-semibold text-sm">لا يوجد ذكريات مسجلة بعد، سجلي أول ذكرى جميلة لتبدأ الرحلة! ✨</div>
                     </div>
                 </section>
 
@@ -218,7 +290,7 @@
                 <section id="gameConsole" class="lg:col-span-5 rounded-3xl p-6 lg:p-8 space-y-6 border glass-card-dark flex flex-col justify-between min-h-[650px] text-right relative custom-transition">
                     <div class="space-y-1">
                         <h3 id="gamesTitle" class="text-xl lg:text-2xl font-black text-white flex items-center space-x-2 space-x-reverse">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -238,7 +310,7 @@
                     </div>
 
                     <!-- حاوية اللعبة المفتوحة -->
-                    <div id="activeGameArea" class="bg-[#1e1338]/60 border border-white/5 rounded-2xl p-4 lg:p-6 min-h-[340px] flex flex-col justify-center">
+                    <div id="activeGameArea" class="bg-[#1e1338]/60 border border-white/5 rounded-2xl p-4 lg:p-6 min-h-[360px] flex flex-col justify-center">
                         <!-- تظهر اللعبة المحددة ديناميكياً هنا -->
                     </div>
 
@@ -261,15 +333,15 @@
     <!-- نافذة منبثقة (Modal) لإضافة ذكرى جديدة -->
     <div id="memoryModal" class="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[2000] hidden">
         <div class="w-full max-w-lg glass-card-dark rounded-3xl p-6 lg:p-8 space-y-6 relative shadow-[0_0_50px_rgba(244,63,94,0.2)] text-right" id="modalContainer">
-            <button id="closeMemoryModal" class="absolute top-5 left-5 text-slate-400 hover:text-slate-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <button onclick="toggleModal(false)" class="absolute top-5 left-5 text-slate-400 hover:text-slate-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
 
             <div class="space-y-1">
                 <h4 id="modalHeader" class="text-xl lg:text-2xl font-black text-rose-500 flex items-center space-x-2 space-x-reverse">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>تسجيل ذكرى جديدة مع بابا</span>
@@ -277,7 +349,7 @@
                 <p class="text-xs text-slate-400">اكتبي هنا اليوم السعيد أو المناسبة عشان نفضل فاكرينها سوا يا روحي.</p>
             </div>
 
-            <form id="newMemoryForm" class="space-y-5">
+            <form id="newMemoryForm" class="space-y-5" onsubmit="handleSaveMemory(event)">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-400">تاريخ الذكرى</label>
@@ -286,10 +358,11 @@
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-400">الرمز التعبيري للذكرى</label>
                         <select id="memoryIcon" class="w-full px-4 py-3 bg-[#1e1335] border border-white/10 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-right">
-                            <option value="heart">❤️ حب جوهري وحنان</option>
-                            <option value="sparkles">✨ نجوم ولمعة</option>
-                            <option value="gift">🎁 هدية حلوة</option>
-                            <option value="star">⭐ علامة بابا الذهبية</option>
+                            <option value="❤️">❤️ حب جوهري وحنان</option>
+                            <option value="✨">✨ نجوم ولمعة</option>
+                            <option value="🎁">🎁 هدية حلوة</option>
+                            <option value="⭐">⭐ علامة بابا الذهبية</option>
+                            <option value="🌸">🌸 وردة رقيقة</option>
                         </select>
                     </div>
                 </div>
@@ -306,14 +379,18 @@
 
                 <div class="flex space-x-3 space-x-reverse pt-2">
                     <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-black rounded-xl shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all hover:scale-[1.02]">حفظ في ذاكرتنا المشتركة 💖</button>
-                    <button type="button" id="cancelMemoryModal" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-xl transition-all border border-white/10 text-center">إلغاء</button>
+                    <button type="button" onclick="toggleModal(false)" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-xl transition-all border border-white/10 text-center">إلغاء</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- نظام الإشعارات العائمة الفاخرة (Toasts) لمنع التنبيهات المزعجة للمتصفح -->
+    <div id="toastContainer" class="fixed top-5 left-5 right-5 md:left-auto md:right-5 max-w-sm z-[9999] flex flex-col space-y-3 pointer-events-none"></div>
+
     <!-- محركات البرمجة والألعاب -->
     <script>
+        
         // 1. قاعدة بيانات الرسائل التحفيزية الحنونة من بابا
         const paternalPhrasesAndMessages = [
             "ربنا يحميكي ويحفظك ليا يا نور عيون بابا وميحرمنيش من ضحكتك اللي بتنور دنيتنا كلها! 💖",
@@ -425,6 +502,7 @@
         let tttBoard = Array(9).fill(null);
         let tttXNext = true;
         let tttWinner = null;
+        let isTttVsAiMoving = false;
 
         const sudokuInitial = [
             [1, null, 3, 4],
@@ -439,9 +517,80 @@
             [4, 3, 1, 2]
         ];
         let sudokuBoard = JSON.parse(JSON.stringify(sudokuInitial));
-        let sudokuSuccess = false;
 
-        // نظام تساقط القلوب التفاعلي
+
+        // إشعارات عائمة زجاجية فائقة الجمال لتجنب استخدام alert()
+        function showToast(title, text, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-2xl shadow-xl border backdrop-blur-md pointer-events-auto transition-all duration-500 transform translate-y-10 opacity-0 flex items-start gap-3 text-right text-sm ${
+                type === 'success' 
+                    ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-100' 
+                    : type === 'error'
+                    ? 'bg-rose-950/80 border-rose-500/30 text-rose-100'
+                    : 'bg-indigo-950/80 border-indigo-500/30 text-indigo-100'
+            }`;
+            
+            const icon = type === 'success' ? '💖' : type === 'error' ? '⚠️' : '🔔';
+            
+            toast.innerHTML = `
+                <div class="text-xl">${icon}</div>
+                <div>
+                    <h5 class="font-black mb-0.5">${title}</h5>
+                    <p class="text-xs opacity-90">${text}</p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // تحريك الإشعار للدخول
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+            
+            // الاختفاء التلقائي بعد 4 ثوانٍ
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-10px]', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 500);
+            }, 4000);
+        }
+
+
+        // تفجير قلوب كثيف وحركي فوري للاحتفالات والفوز
+        function burstHearts() {
+            const hearts = ['❤️', '💖', '🌸', '💕', '💗', '🎀', '✨', '⭐'];
+            const container = document.createElement('div');
+            container.className = 'fixed inset-0 pointer-events-none z-[999] overflow-hidden';
+            document.body.appendChild(container);
+
+            for (let i = 0; i < 40; i++) {
+                const heart = document.createElement('div');
+                heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+                heart.style.position = 'absolute';
+                heart.style.bottom = '-50px';
+                heart.style.left = `${Math.random() * 100}vw`;
+                
+                const size = Math.random() * 25 + 15;
+                const duration = Math.random() * 2.5 + 2;
+                const sideMove = (Math.random() - 0.5) * 200; // اتجاه متطاير جانبي
+
+                heart.style.fontSize = `${size}px`;
+                heart.style.opacity = Math.random() * 0.5 + 0.5;
+                heart.style.transition = `all ${duration}s cubic-bezier(0.25, 1, 0.5, 1)`;
+
+                container.appendChild(heart);
+
+                // تفعيل الحركة فوراً
+                setTimeout(() => {
+                    heart.style.transform = `translateY(-110vh) translateX(${sideMove}px) scale(1.4) rotate(${Math.random() * 360}deg)`;
+                    heart.style.opacity = '0';
+                }, 50);
+            }
+
+            setTimeout(() => { container.remove(); }, 3000);
+        }
+
+        // نظام تساقط القلوب التفاعلي التلقائي في الخلفية
         function startHeartsRain() {
             const hearts = ['❤️', '💖', '🌸', '💕', '💗', '🎀'];
             setInterval(() => {
@@ -459,248 +608,801 @@
 
                 document.body.appendChild(heart);
                 setTimeout(() => { heart.remove(); }, duration * 1000);
-            }, 600);
+            }, 800);
         }
 
-        // تفجير قلوب عند الفوز أو تسجيل الدخول
-        function burstHearts() {
-            for (let i = 0; i < 15; i++) {
-                const heart = document.createElement('div');
-                heart.className = 'fixed text-rose-500 pointer-events-none z-[2000] animate-pulse';
-                heart.innerText = '💖';
-                heart.style.left = `${Math.random() * 80 + 10}vw`;
-                heart.style.top = `${Math.random() * 60 + 20}vh`;
-                heart.style.fontSize = `${Math.random() * 20 + 15}px`;
-                document.body.appendChild(heart);
-                setTimeout(() => { heart.remove(); }, 2000);
+
+        // حساب فارق الوقت بدقة وعرض العداد الزمني المباشر (من ٢٩ أبريل ٢٠٢٦)
+        function updateTimer() {
+            const baseDate = new Date('2026-04-29T00:00:00');
+            const now = new Date();
+            let diff = now - baseDate;
+
+            // في حال كان الوقت الحالي قبل ٢٩ أبريل ٢٠٢٦
+            if (diff < 0) {
+                diff = Math.abs(diff);
+            }
+
+            const second = 1000;
+            const minute = second * 60;
+            const hour = minute * 60;
+            const day = hour * 24;
+            const year = day * 365;
+
+            const years = Math.floor(diff / year);
+            const months = Math.floor((diff % year) / (day * 30));
+            const days = Math.floor(((diff % year) % (day * 30)) / day);
+            const hours = Math.floor((diff % day) / hour);
+            const minutes = Math.floor((diff % hour) / minute);
+            const seconds = Math.floor((diff % minute) / second);
+
+            document.getElementById('yearsVal').innerText = String(years).padStart(2, '0');
+            document.getElementById('monthsVal').innerText = String(months).padStart(2, '0');
+            document.getElementById('daysVal').innerText = String(days).padStart(2, '0');
+            document.getElementById('hoursVal').innerText = String(hours).padStart(2, '0');
+            document.getElementById('minutesVal').innerText = String(minutes).padStart(2, '0');
+            document.getElementById('secondsVal').innerText = String(seconds).padStart(2, '0');
+        }
+
+
+        // التحكم في النوافذ المنبثقة
+        function toggleModal(show) {
+            const modal = document.getElementById('memoryModal');
+            if (show) {
+                modal.classList.remove('hidden');
+                document.getElementById('memoryDate').value = new Date().toISOString().split('T')[0];
+            } else {
+                modal.classList.add('hidden');
             }
         }
 
-        // العداد الزمني المباشر (تحديث كل ثانية)
-        function initTimer() {
-            const startDate = new Date('April 29, 2026 00:00:00').getTime();
+        // عرض رسالة تشجيعية حنونة من بابا في الصندوق المخصص
+        function triggerPaternalMessage() {
+            const randomIndex = Math.floor(Math.random() * paternalPhrasesAndMessages.length);
+            const message = paternalPhrasesAndMessages[randomIndex];
             
-            function update() {
-                const now = new Date().getTime();
-                const diff = now - startDate;
-
-                if (diff <= 0) {
-                    return;
-                }
-
-                const s = 1000;
-                const m = s * 60;
-                const h = m * 60;
-                const day = h * 24;
-                const month = day * 30.44; 
-                const year = day * 365.25; 
-
-                const years = Math.floor(diff / year);
-                const months = Math.floor((diff % year) / month);
-                const days = Math.floor((diff % month) / day);
-                const hours = Math.floor((diff % day) / h);
-                const minutes = Math.floor((diff % h) / m);
-                const seconds = Math.floor((diff % m) / s);
-
-                document.getElementById('yearsVal').innerText = String(years).padStart(2, '0');
-                document.getElementById('monthsVal').innerText = String(months).padStart(2, '0');
-                document.getElementById('daysVal').innerText = String(days).padStart(2, '0');
-                document.getElementById('hoursVal').innerText = String(hours).padStart(2, '0');
-                document.getElementById('minutesVal').innerText = String(minutes).padStart(2, '0');
-                document.getElementById('secondsVal').innerText = String(seconds).padStart(2, '0');
-            }
-            setInterval(update, 1000);
-            update();
+            const rewardBox = document.getElementById('paternalRewardBox');
+            const rewardText = document.getElementById('paternalRewardText');
+            
+            rewardText.innerText = message;
+            rewardBox.classList.remove('hidden');
+            rewardBox.classList.add('animate-pulse');
+            setTimeout(() => { rewardBox.classList.remove('animate-pulse'); }, 2000);
         }
 
-        // التحقق من صحة كلمة السر
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const val = document.getElementById('passwordInput').value.trim();
-            if (val === 'دنيتي' || val.toLowerCase() === 'donia') {
-                document.getElementById('login-screen').classList.add('scale-95', 'opacity-0');
-                setTimeout(() => {
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('main-content').classList.remove('hidden');
-                    setTimeout(() => {
-                        document.getElementById('main-content').classList.add('opacity-100');
-                    }, 50);
-                    startHeartsRain();
-                    initTimer();
-                    renderMemories();
-                    renderGame('match');
-                    burstHearts();
-                }, 800);
-            } else {
-                const card = document.getElementById('loginCard');
-                card.classList.add('animate-shake');
-                document.getElementById('loginError').classList.remove('hidden');
-                setTimeout(() => { card.classList.remove('animate-shake'); }, 500);
-            }
-        });
-
-        // تبديل الألوان (Light / Dark Mode)
-        const themeBtn = document.getElementById('themeToggle');
-        themeBtn.addEventListener('click', function() {
-            isDarkMode = !isDarkMode;
-            const body = document.body;
-            const timerSec = document.getElementById('timerSection');
-            const timelineSec = document.getElementById('memoriesTimeline');
-            const consoleSec = document.getElementById('gameConsole');
-            const footerSec = document.getElementById('footerSection');
-            const modalCont = document.getElementById('modalContainer');
-
-            if (isDarkMode) {
-                body.className = "bg-[#130a24] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-rose-500/30 custom-transition relative";
-                document.getElementById('sunIcon').classList.add('hidden');
-                document.getElementById('moonIcon').classList.remove('hidden');
-                themeBtn.className = "p-2.5 rounded-xl border bg-[#1e1338] border-white/10 text-yellow-400 hover:bg-white/10 custom-transition shadow-sm flex items-center justify-center";
-                
-                // تفتيح أو تغميق الأقسام
-                [timerSec, timelineSec, consoleSec, modalCont].forEach(el => {
-                    el.className = el.className.replace('glass-card-light', 'glass-card-dark');
-                });
-                footerSec.className = "border-t border-white/5 bg-[#090412]/90 py-8 backdrop-blur-md text-center space-y-2 mt-auto custom-transition";
-                document.getElementById('timelineTitle').className = "text-xl lg:text-2xl font-black text-white flex items-center space-x-2 space-x-reverse";
-                document.getElementById('gamesTitle').className = "text-xl lg:text-2xl font-black text-white flex items-center space-x-2 space-x-reverse";
-                document.getElementById('subQuote').className = "max-w-xl mx-auto text-xs lg:text-sm font-semibold leading-relaxed text-slate-300/90";
-                
-                // تعديل هالات الإضاءة
-                document.getElementById('glow1').className = "absolute top-[10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-pink-700/15 blur-[110px] animate-glow-1";
-                document.getElementById('glow2').className = "absolute top-[40%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-violet-800/15 blur-[130px] animate-glow-2";
-                document.getElementById('glow3').className = "absolute bottom-[-10%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-rose-600/15 blur-[120px] animate-glow-3";
-            } else {
-                body.className = "bg-[#fff5f7] text-slate-800 min-h-screen flex flex-col justify-between selection:bg-rose-500/30 custom-transition relative";
-                document.getElementById('sunIcon').classList.remove('hidden');
-                document.getElementById('moonIcon').classList.add('hidden');
-                themeBtn.className = "p-2.5 rounded-xl border bg-pink-100 border-pink-200 text-slate-800 hover:bg-pink-200 custom-transition shadow-sm flex items-center justify-center";
-                
-                [timerSec, timelineSec, consoleSec, modalCont].forEach(el => {
-                    el.className = el.className.replace('glass-card-dark', 'glass-card-light');
-                });
-                footerSec.className = "border-t border-pink-200/50 bg-[#fff1f3]/70 py-8 backdrop-blur-md text-center space-y-2 mt-auto custom-transition";
-                document.getElementById('timelineTitle').className = "text-xl lg:text-2xl font-black text-slate-800 flex items-center space-x-2 space-x-reverse";
-                document.getElementById('gamesTitle').className = "text-xl lg:text-2xl font-black text-slate-800 flex items-center space-x-2 space-x-reverse";
-                document.getElementById('subQuote').className = "max-w-xl mx-auto text-xs lg:text-sm font-semibold leading-relaxed text-slate-700";
-
-                document.getElementById('glow1').className = "absolute top-[10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-pink-300/25 blur-[110px] animate-glow-1";
-                document.getElementById('glow2').className = "absolute top-[40%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-violet-300/20 blur-[130px] animate-glow-2";
-                document.getElementById('glow3').className = "absolute bottom-[-10%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-rose-300/20 blur-[120px] animate-glow-3";
-            }
-            renderMemories();
-            renderGame(activeTab);
-        });
-
-        // عرض وتعديل شريط الذكريات
-        function getIconSVG(type) {
-            const c = "w-4 h-4 text-rose-500";
-            if (type === 'heart') return `<svg xmlns="http://www.w3.org/2000/svg" class="${c}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
-            if (type === 'sparkles') return `<svg xmlns="http://www.w3.org/2000/svg" class="${c}" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>`;
-            if (type === 'gift') return `<svg xmlns="http://www.w3.org/2000/svg" class="${c}" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`;
-            return `<svg xmlns="http://www.w3.org/2000/svg" class="${c}" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>`;
-        }
-
+        // تخزين الذكريات ورسمها على الخط الزمني
         function renderMemories() {
-            const list = document.getElementById('memoriesList');
+            const memoriesList = document.getElementById('memoriesList');
             if (memories.length === 0) {
-                list.innerHTML = `
-                    <div class="text-center py-16 ${isDarkMode ? 'bg-slate-900/20 border-white/5 text-slate-400' : 'bg-pink-50/20 border-pink-200 text-slate-700'} border border-dashed rounded-2xl p-6">
-                        <div class="w-16 h-16 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.232.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                        </div>
-                        <p class="font-black text-sm">شريط الذكريات لسة فاضي يا دنيتي!</p>
-                        <p class="text-xs mt-1 text-slate-500">اضغطي فوق على "تسجيل ذكرى جديدة" واكتبي أول ذكرى عشان نحتفظ بيها هنا.</p>
-                    </div>
-                `;
+                memoriesList.innerHTML = `<div class="text-center py-12 text-slate-400 font-semibold text-sm">لا يوجد ذكريات مسجلة بعد، سجلي أول ذكرى جميلة لتبدأ الرحلة! ✨</div>`;
                 return;
             }
 
-            let html = `<div class="relative border-r-2 border-dashed border-rose-500/30 pr-6 mr-4 space-y-8 py-4">`;
-            memories.forEach(m => {
-                const dateStr = new Date(m.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-                html += `
-                    <div class="relative group">
-                        <div class="absolute -right-[37px] top-0.5 ${isDarkMode ? 'bg-[#130a24]' : 'bg-[#fff5f7]'} border-2 border-rose-500/50 rounded-full w-8 h-8 flex items-center justify-center shadow-[0_0_15px_rgba(244,63,94,0.3)] z-10 group-hover:scale-110 group-hover:border-rose-400 transition-all duration-300">
-                            ${getIconSVG(m.iconType)}
+            // ترتيب الذكريات من الأحدث للأقدم
+            const sorted = [...memories].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            memoriesList.innerHTML = sorted.map((mem) => {
+                return `
+                    <div class="relative pl-4 border-r-2 border-pink-500/30 pr-6 pb-2 group transition-all duration-300 hover:border-pink-500">
+                        <!-- دوت الخط الزمني اللامع -->
+                        <div class="absolute right-[-7px] top-1.5 w-3 h-3 rounded-full bg-[#130a24] border-2 border-pink-500 group-hover:bg-pink-500 transition-colors"></div>
+                        
+                        <div class="p-5 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-pink-500/20 transition-all shadow-sm">
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="text-sm font-bold text-slate-400 tabular-nums">${mem.date}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">${mem.icon === 'heart' ? '❤️' : mem.icon === 'sparkles' ? '✨' : mem.icon === 'gift' ? '🎁' : mem.icon === 'star' ? '⭐' : mem.icon}</span>
+                                    <button onclick="deleteMemory('${mem.id}')" class="text-rose-400 hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-rose-500/10" title="حذف الذكرى">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h4 class="text-md font-black text-rose-400 mb-1 leading-relaxed">${mem.title}</h4>
+                            <p class="text-xs lg:text-sm text-slate-300 leading-relaxed whitespace-pre-line">${mem.desc}</p>
                         </div>
-                        <div class="p-5 rounded-2xl relative transition-all duration-300 hover:scale-[1.01] ${isDarkMode ? 'bg-[#1d1238]/80 border border-white/5 hover:border-pink-500/40' : 'bg-white border border-pink-200 hover:border-pink-300'} shadow-sm">
-                            <button onclick="deleteMemory('${m.id}')" class="absolute top-4 left-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all" title="حذف هذه الذكرى">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                            <div class="space-y-2">
-                                <span class="inline-block text-xs font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full">${dateStr}</span>
-                                <h4 class="text-base lg:text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}">${m.title}</h4>
-                                <p class="text-xs lg:text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}">${m.description}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // حفظ ذكرى جديدة
+        function handleSaveMemory(e) {
+            e.preventDefault();
+            const date = document.getElementById('memoryDate').value;
+            const icon = document.getElementById('memoryIcon').value;
+            const title = document.getElementById('memoryTitle').value;
+            const desc = document.getElementById('memoryDesc').value;
+
+            const newMem = {
+                id: 'mem_' + Date.now(),
+                date,
+                icon,
+                title,
+                desc
+            };
+
+            memories.push(newMem);
+            localStorage.setItem('donia_paternal_memories_v3', JSON.stringify(memories));
+            
+            renderMemories();
+            toggleModal(false);
+            e.target.reset();
+            
+            showToast('تمت الإضافة بنجاح', 'تم تسجيل هذه اللحظة الدافئة للأبد 💖');
+            burstHearts();
+            triggerPaternalMessage();
+        }
+
+        // حذف ذكرى معينة
+        function deleteMemory(id) {
+            memories = memories.filter(m => m.id !== id);
+            localStorage.setItem('donia_paternal_memories_v3', JSON.stringify(memories));
+            renderMemories();
+            showToast('تم الحذف', 'تمت إزالة الذكرى بسلام ✨', 'error');
+        }
+
+
+        // 1. لعبة تطابق البطاقات (Memory Match Game)
+        function initMatchGame() {
+            const emojis = ['🧸', '🌈', '🍭', '🌸', '🦋', '🐱', '🍩', '🌟'];
+            // نكرر الرموز لعمل أزواج متطابقة
+            const list = [...emojis, ...emojis];
+            
+            // خوارزمية ترتيب عشوائي موثوقة
+            for (let i = list.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [list[i], list[j]] = [list[j], list[i]];
+            }
+
+            cardDeck = list.map((emoji, index) => ({
+                id: index,
+                emoji: emoji,
+                isFlipped: false,
+                isMatched: false
+            }));
+
+            flippedIndices = [];
+            matchedIndices = [];
+            renderMatchGame();
+        }
+
+        function renderMatchGame() {
+            const area = document.getElementById('activeGameArea');
+            let isAllMatched = cardDeck.every(c => c.isMatched);
+            
+            let gridHtml = `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <span class="text-xs bg-pink-500/20 text-pink-300 py-1 px-3 rounded-full font-bold">لعبة تطابق الأشكال والمشاعر 🧸</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 lg:gap-3 max-w-[320px] mx-auto">
+            `;
+
+            cardDeck.forEach((card, index) => {
+                const isFlipped = card.isFlipped || card.isMatched;
+                gridHtml += `
+                    <div onclick="handleCardClick(${index})" class="memory-card h-16 w-16 mx-auto ${isFlipped ? 'flipped' : ''}">
+                        <div class="memory-card-inner w-full h-full duration-300 relative">
+                            <div class="memory-card-front bg-slate-800 border border-white/10 hover:border-pink-500/50 flex items-center justify-center text-xl shadow-md">
+                                <span class="text-pink-500 font-bold">؟</span>
+                            </div>
+                            <div class="memory-card-back bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center text-2xl shadow-lg">
+                                <span>${card.emoji}</span>
                             </div>
                         </div>
                     </div>
                 `;
             });
-            html += `</div>`;
-            list.innerHTML = html;
+
+            gridHtml += `
+                    </div>
+                    ${isAllMatched ? `
+                        <div class="text-center mt-4">
+                            <p class="text-emerald-400 text-xs font-black mb-2 animate-bounce">شاطرة يا عسل! كسبتي في لعبة تطابق البطاقات 🏆</p>
+                            <button onclick="initMatchGame()" class="py-2 px-5 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 transition-all shadow-md">العبِي تاني 🔄</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            area.innerHTML = gridHtml;
         }
 
-        // تسجيل وحذف الذكرى
-        const modal = document.getElementById('memoryModal');
-        document.getElementById('openMemoryModal').addEventListener('click', () => { modal.classList.remove('hidden'); });
-        document.getElementById('closeMemoryModal').addEventListener('click', () => { modal.classList.add('hidden'); });
-        document.getElementById('cancelMemoryModal').addEventListener('click', () => { modal.classList.add('hidden'); });
+        function handleCardClick(index) {
+            if (flippedIndices.length >= 2 || cardDeck[index].isFlipped || cardDeck[index].isMatched) return;
 
-        document.getElementById('newMemoryForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const date = document.getElementById('memoryDate').value;
-            const iconType = document.getElementById('memoryIcon').value;
-            const title = document.getElementById('memoryTitle').value;
-            const description = document.getElementById('memoryDesc').value;
+            cardDeck[index].isFlipped = true;
+            flippedIndices.push(index);
+            renderMatchGame();
 
-            const newMemory = { id: Date.now().toString(), date, iconType, title, description };
-            memories.push(newMemory);
-            memories.sort((a, b) => new Date(a.date) - new Date(b.date));
-            localStorage.setItem('donia_paternal_memories_v3', JSON.stringify(memories));
-
-            document.getElementById('newMemoryForm').reset();
-            modal.classList.add('hidden');
-            renderMemories();
-            burstHearts();
-            showPaternalSpeech("تسلم إيدك يا بنوتة بابا الغالية! تم حفظ ذكرى جديدة لرحلتنا وعالمنا الجميل 🌸");
-        });
-
-        function deleteMemory(id) {
-            memories = memories.filter(m => m.id !== id);
-            localStorage.setItem('donia_paternal_memories_v3', JSON.stringify(memories));
-            renderMemories();
-            showPaternalSpeech("تم مسح الذكرى برقة وهدوء يا روحي 🍃");
+            if (flippedIndices.length === 2) {
+                const [first, second] = flippedIndices;
+                if (cardDeck[first].emoji === cardDeck[second].emoji) {
+                    cardDeck[first].isMatched = true;
+                    cardDeck[second].isMatched = true;
+                    flippedIndices = [];
+                    renderMatchGame();
+                    
+                    // التحقق من فوز اللعبة بأكملها
+                    if (cardDeck.every(c => c.isMatched)) {
+                        burstHearts();
+                        triggerPaternalMessage();
+                    }
+                } else {
+                    setTimeout(() => {
+                        cardDeck[first].isFlipped = false;
+                        cardDeck[second].isFlipped = false;
+                        flippedIndices = [];
+                        renderMatchGame();
+                    }, 1000);
+                }
+            }
         }
 
-        // عرض الكلمات الحنونة والمبهجة من بابا
-        function showPaternalSpeech(prefix = "") {
-            const text = paternalPhrasesAndMessages[Math.floor(Math.random() * paternalPhrasesAndMessages.length)];
-            document.getElementById('paternalRewardBox').classList.remove('hidden');
-            document.getElementById('paternalRewardText').innerText = prefix ? `${prefix}\n\n${text}` : text;
-            burstHearts();
+
+        // 2. عجلة الحظ (Lucky Wheel Game)
+        const wheelPrizes = [
+            { text: "شوكولاتة لذيذة 🍫", reward: "شوكولاتة لذيذة من بابا مستنياكي في أول مقابلة لينا! 🍫" },
+            { text: "خروجة حلوة سوا 🚗", reward: "يوم ممتع وخروج وتفسيح في المكان اللي تختاريه يا دنيتي! 🚗" },
+            { text: "حضن دافئ 🤗", reward: "أكبر حضن دافي في الدنيا كلها مستني يمسح أي تعب عن قلبك الطيب! 🤗" },
+            { text: "هدية مفاجأة 🎁", reward: "هدية سرية وجميلة بابا هيختارها ليكي مخصوص تسعد قلبك! 🎁" },
+            { text: "دعوة مستجابة 🤲", reward: "دعاء مستجاب ومخصوص من قلب بابا ليكي بالنجاح والصلاح في دراستك وعمرك! 🤲" },
+            { text: "بوسة كبيرة 😘", reward: "بوسة رقيقة من بابا على راس بنوته الملكة الطيبة 😘" }
+        ];
+
+        function initWheelGame() {
+            renderWheelGame();
         }
 
-        // 4. نظام الألعاب المتكامل الستة
+        function renderWheelGame() {
+            const area = document.getElementById('activeGameArea');
+            area.innerHTML = `
+                <div class="space-y-6 text-center">
+                    <span class="text-xs bg-pink-500/20 text-pink-300 py-1 px-3 rounded-full font-bold">عجلة هدايا ومفاجآت بابا 💖</span>
+                    
+                    <div class="wheel-container">
+                        <div class="wheel-pointer"></div>
+                        <div id="wheelBody" class="wheel-body" style="transform: rotate(${wheelRotation}deg)">
+                            <!-- شرائح عجلة الحظ -->
+                            ${wheelPrizes.map((p, idx) => {
+                                const deg = idx * 60;
+                                const colors = ['#f43f5e', '#8b5cf6', '#ec4899', '#6366f1', '#db2777', '#4f46e5'];
+                                return `
+                                    <div class="wheel-segment" style="transform: rotate(${deg}deg) skewY(30deg); background: ${colors[idx % colors.length]}; border-left: 2px solid #1e1b4b; border-top: 2px solid #1e1b4b">
+                                        <div style="transform: skewY(-30deg) rotate(30deg) translate(30px, 40px); color: white; font-weight: 900; font-size: 10px; width: 100px; text-align: center; direction: rtl;">
+                                            ${p.text}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button id="spinBtn" onclick="spinWheel()" class="py-3 px-8 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-sm font-black rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
+                            لفّي العجلة يا روحي! 💫
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            isSpinning = true;
+            
+            const btn = document.getElementById('spinBtn');
+            if (btn) btn.disabled = true;
+
+            const extraSpins = 5 + Math.floor(Math.random() * 5); // عدد الدورات الكاملة
+            const randomPrizeIndex = Math.floor(Math.random() * wheelPrizes.length);
+            
+            // نحسب الزاوية المطلوبة لتقف الشريحة عند المؤشر العلوي (بافتراض التوزيع على 360 درجة)
+            // الزاوية المعكوسة لأن الدوران مع عقارب الساعة والمؤشر ثابت بالأعلى
+            const targetDeg = (extraSpins * 360) + (360 - (randomPrizeIndex * 60) - 30);
+            
+            wheelRotation = targetDeg;
+            
+            const wheelBody = document.getElementById('wheelBody');
+            if (wheelBody) {
+                wheelBody.style.transform = `rotate(${wheelRotation}deg)`;
+            }
+
+            setTimeout(() => {
+                isSpinning = false;
+                if (btn) btn.disabled = false;
+                
+                const wonPrize = wheelPrizes[randomPrizeIndex];
+                
+                burstHearts();
+                
+                // عرض الجائزة في صندوق الرسائل البابوية
+                const rewardBox = document.getElementById('paternalRewardBox');
+                const rewardText = document.getElementById('paternalRewardText');
+                rewardText.innerHTML = `🌟 مبروك يا دنيتي الغالية! كسبتي بكرة العجلة:<br><strong>${wonPrize.reward}</strong><br><span class="text-xs text-rose-300">أول ما تشوفي بابا فكريه بجايزتك علطول!</span>`;
+                rewardBox.classList.remove('hidden');
+
+                showToast('مبروك الجائزة! 🎉', wonPrize.text);
+            }, 4000);
+        }
+
+
+        // 3. مسابقة سؤال وجواب دينية (Religious Q&A)
+        function initQuizGame() {
+            currentQuizIndex = 0;
+            quizAnswered = false;
+            renderQuizGame();
+        }
+
+        function renderQuizGame() {
+            const area = document.getElementById('activeGameArea');
+            const q = quranicQuestionsColloquial[currentQuizIndex];
+
+            area.innerHTML = `
+                <div class="space-y-5 text-right">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs bg-indigo-500/20 text-indigo-300 py-1 px-3 rounded-full font-bold">سؤال وجواب إسلامي ممتع 🕋</span>
+                        <span class="text-xs font-bold text-slate-400">سؤال ${currentQuizIndex + 1} من ${quranicQuestionsColloquial.length}</span>
+                    </div>
+
+                    <h4 class="text-md lg:text-lg font-black text-white leading-relaxed">${q.question}</h4>
+
+                    <div class="grid grid-cols-1 gap-3">
+                        ${q.options.map((opt, idx) => {
+                            return `
+                                <button onclick="checkQuizAnswer(${idx})" id="quiz-opt-${idx}" class="w-full py-3 px-4 bg-slate-900/60 hover:bg-slate-800 border border-white/5 hover:border-pink-500/30 text-slate-200 hover:text-white font-bold text-xs lg:text-sm rounded-xl text-right transition-all flex items-center justify-between">
+                                    <span>${opt}</span>
+                                    <span id="quiz-badge-${idx}" class="hidden"></span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div id="quizFeedback" class="hidden p-3 rounded-xl text-xs font-bold leading-relaxed"></div>
+
+                    <div class="flex items-center justify-between gap-4 pt-2">
+                        <button onclick="showQuizHint()" class="py-2 px-4 bg-violet-600/30 border border-violet-500/30 text-violet-300 hover:bg-violet-600/40 text-xs font-bold rounded-xl transition-all">
+                            مساعدة وتلميح من بابا 💡
+                        </button>
+                        
+                        <button onclick="nextQuizQuestion()" id="nextQuizBtn" class="py-2.5 px-6 bg-pink-500 hover:bg-pink-600 text-white text-xs font-black rounded-xl shadow-md transition-all hidden">
+                            السؤال التالي ➡️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkQuizAnswer(selectedIndex) {
+            if (quizAnswered) return;
+            quizAnswered = true;
+
+            const q = quranicQuestionsColloquial[currentQuizIndex];
+            const feedback = document.getElementById('quizFeedback');
+            const nextBtn = document.getElementById('nextQuizBtn');
+
+            // تلوين الاختيارات
+            q.options.forEach((_, idx) => {
+                const btn = document.getElementById(`quiz-opt-${idx}`);
+                const badge = document.getElementById(`quiz-badge-${idx}`);
+                btn.disabled = true;
+
+                if (idx === q.correct) {
+                    btn.className = btn.className.replace('bg-slate-900/60 border-white/5', 'bg-emerald-950/80 border-emerald-500 text-emerald-100');
+                    badge.innerHTML = "✅ إجابة صحيحة!";
+                    badge.classList.remove('hidden');
+                } else if (idx === selectedIndex) {
+                    btn.className = btn.className.replace('bg-slate-900/60 border-white/5', 'bg-rose-950/80 border-rose-500 text-rose-100');
+                    badge.innerHTML = "❌ حاولِي تاني";
+                    badge.classList.remove('hidden');
+                }
+            });
+
+            feedback.classList.remove('hidden');
+            if (selectedIndex === q.correct) {
+                feedback.className = "p-3 rounded-xl text-xs font-bold leading-relaxed bg-emerald-500/10 border border-emerald-500/20 text-emerald-300";
+                feedback.innerHTML = "رائعة يا دنيتي! إجابتك ممتازة وصحيحة، ربنا يزيدك علم ونور في قلبك الطيب 🌟";
+                burstHearts();
+                triggerPaternalMessage();
+            } else {
+                feedback.className = "p-3 rounded-xl text-xs font-bold leading-relaxed bg-rose-500/10 border border-rose-500/20 text-rose-300";
+                feedback.innerHTML = `معلش يا نور عيني، الإجابة الصح هي: <strong>"${q.options[q.correct]}"</strong>. اتعلمناها سوا وبابا فخور بمحاولتك الذكية! ❤️`;
+            }
+
+            nextBtn.classList.remove('hidden');
+        }
+
+        function showQuizHint() {
+            const q = quranicQuestionsColloquial[currentQuizIndex];
+            showToast('💡 تلميح ومساعدة من بابا', q.hint, 'info');
+        }
+
+        function nextQuizQuestion() {
+            if (currentQuizIndex < quranicQuestionsColloquial.length - 1) {
+                currentQuizIndex++;
+                quizAnswered = false;
+                renderQuizGame();
+            } else {
+                // انتهاء المسابقة بالكامل
+                const area = document.getElementById('activeGameArea');
+                area.innerHTML = `
+                    <div class="text-center space-y-4">
+                        <span class="text-4xl">🏆</span>
+                        <h4 class="text-lg font-black text-rose-400">خلصتي المسابقة الدينية كلها بنجاح!</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">ما شاء الله عليكي يا دنيتي، ذكية وشطورة وبابا فخور جداً بمعلوماتك الدينية الجميلة. ربنا يجعلك من الصالحات دايماً 🕋💖</p>
+                        <button onclick="initQuizGame()" class="py-2.5 px-6 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 shadow-md transition-all">العبِي المسابقة تاني 🔄</button>
+                    </div>
+                `;
+                burstHearts();
+                triggerPaternalMessage();
+            }
+        }
+
+
+        // 4. لعبة ترتيب الحروف (Word Unscramble Game)
+        function initUnscrambleGame() {
+            currentWordIndex = 0;
+            renderUnscrambleGame();
+        }
+
+        function renderUnscrambleGame() {
+            const area = document.getElementById('activeGameArea');
+            const item = wordGameDatabase[currentWordIndex];
+
+            area.innerHTML = `
+                <div class="space-y-5 text-right">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs bg-pink-500/20 text-pink-300 py-1 px-3 rounded-full font-bold">لعبة تجميع وترتيب الحروف 🧩</span>
+                        <span class="text-xs font-bold text-slate-400">كلمة ${currentWordIndex + 1} من ${wordGameDatabase.length}</span>
+                    </div>
+
+                    <p class="text-xs text-slate-300">رتبِي الحروف المبعثرة دي لتكوين كلمة مفيدة وجميلة:</p>
+
+                    <div class="py-4 text-center">
+                        <span class="text-3xl font-black text-rose-400 tracking-widest bg-slate-900/60 py-3 px-8 border border-white/5 rounded-2xl inline-block select-none tabular-nums">${item.jumbled}</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <input type="text" id="wordInput" placeholder="اكتبي الكلمة الصحيحة هنا..." class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-center font-bold text-sm">
+                        <button onclick="checkUnscrambleWord()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">تحقق من صحة ترتيبكِ للكلمة 🔎</button>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-4 pt-1">
+                        <button onclick="showUnscrambleHint()" class="py-2 px-4 bg-violet-600/30 border border-violet-500/30 text-violet-300 hover:bg-violet-600/40 text-xs font-bold rounded-xl transition-all">
+                            تلميح ومساعدة من بابا 💡
+                        </button>
+                        <button id="nextWordBtn" onclick="nextUnscrambleWord()" class="py-2 px-5 bg-pink-500 hover:bg-pink-600 text-white text-xs font-black rounded-xl shadow-md transition-all hidden">
+                            الكلمة التالية ➡️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkUnscrambleWord() {
+            const item = wordGameDatabase[currentWordIndex];
+            const inputVal = document.getElementById('wordInput').value.trim();
+            const nextBtn = document.getElementById('nextWordBtn');
+
+            if (!inputVal) {
+                showToast('تنبيه', 'من فضلك اكتبي الكلمة الأول يا دنيتي ✨', 'error');
+                return;
+            }
+
+            // تنظيف المدخلات والتحقق منها دون مسافات
+            const cleanInput = inputVal.replace(/\s+/g, '');
+            const cleanCorrect = item.correct.replace(/\s+/g, '');
+
+            if (cleanInput === cleanCorrect) {
+                showToast('شطورة يا قلبي! 🎉', 'رتبتي الكلمة صح وبطريقة ممتازة!');
+                burstHearts();
+                triggerPaternalMessage();
+                nextBtn.classList.remove('hidden');
+            } else {
+                showToast('محاولة طيبة', 'الترتيب مش مظبوط تماماً، جربي تاني يا روحي أو اطلبي مساعدة بابا! ❤️', 'error');
+            }
+        }
+
+        function showUnscrambleHint() {
+            const item = wordGameDatabase[currentWordIndex];
+            showToast('💡 مساعدة وتلميح من بابا', item.hint, 'info');
+        }
+
+        function nextUnscrambleWord() {
+            if (currentWordIndex < wordGameDatabase.length - 1) {
+                currentWordIndex++;
+                renderUnscrambleGame();
+            } else {
+                const area = document.getElementById('activeGameArea');
+                area.innerHTML = `
+                    <div class="text-center space-y-4">
+                        <span class="text-4xl">👑</span>
+                        <h4 class="text-lg font-black text-rose-400">مبروك! رتبتي كل الكلمات بنجاح باهر</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">انتي بطلة حقيقية في ترتيب الحروف وقوية الملاحظة والذكاء! ربنا يحميكي ليا دايماً يا دنيتي ✨</p>
+                        <button onclick="initUnscrambleGame()" class="py-2.5 px-6 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 shadow-md transition-all">العبِي تاني 🔄</button>
+                    </div>
+                `;
+                burstHearts();
+                triggerPaternalMessage();
+            }
+        }
+
+
+        // 5. لعبة إكس أو ضد بابا (Tic-Tac-Toe vs Papa AI)
+        function initTttGame() {
+            tttBoard = Array(9).fill(null);
+            tttXNext = true; // اللاعب البشري (دنيا) يلعب بالرمز X
+            tttWinner = null;
+            isTttVsAiMoving = false;
+            renderTttGame();
+        }
+
+        function renderTttGame() {
+            const area = document.getElementById('activeGameArea');
+            
+            let statusText = "دوركِ تلعبي يا روحي (X) 🌟";
+            if (isTttVsAiMoving) {
+                statusText = "بابا بيفكر في نقلته... 🤔💭";
+            } else if (tttWinner === 'X') {
+                statusText = "🏆 كسبتي بابا البطل! برافو عليكي يا ملكتي!";
+            } else if (tttWinner === 'O') {
+                statusText = "بابا كسب المرة دي! لعبتي جميل أوي يا روحي ❤️";
+            } else if (tttWinner === 'draw') {
+                statusText = "تعادل جميل وممتع بينا! 🤝💞";
+            }
+
+            area.innerHTML = `
+                <div class="space-y-4 text-center">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs bg-pink-500/20 text-pink-300 py-1 px-3 rounded-full font-bold">إكس أو (تحدي ذكاء ضد بابا البطل) ⚔️</span>
+                    </div>
+
+                    <p class="text-xs font-black text-rose-400 mb-2" id="tttStatus">${statusText}</p>
+
+                    <div class="grid grid-cols-3 gap-2.5 max-w-[200px] mx-auto">
+                        ${tttBoard.map((cell, idx) => {
+                            let cellContent = '';
+                            let cellClass = "h-16 w-16 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center text-2xl font-black transition-all hover:bg-slate-800 active:scale-95";
+                            
+                            if (cell === 'X') {
+                                cellContent = 'X';
+                                cellClass += " text-pink-500";
+                            } else if (cell === 'O') {
+                                cellContent = 'O';
+                                cellClass += " text-violet-400";
+                            }
+                            
+                            return `<button onclick="handleTttClick(${idx})" class="${cellClass}">${cellContent}</button>`;
+                        }).join('')}
+                    </div>
+
+                    <div class="mt-4 flex justify-center gap-3">
+                        <button onclick="initTttGame()" class="py-2 px-6 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 transition-all shadow-md">إعادة اللعب 🔄</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleTttClick(index) {
+            if (tttBoard[index] || tttWinner || isTttVsAiMoving) return;
+
+            // حركة اللاعب دنيا (X)
+            tttBoard[index] = 'X';
+            checkTttWinner();
+            
+            if (!tttWinner) {
+                // تفعيل ذكاء بابا الاصطناعي مع تأخير بسيط للمحاكاة الواقعية المحببة
+                isTttVsAiMoving = true;
+                renderTttGame();
+                
+                setTimeout(() => {
+                    makePapaAiMove();
+                }, 900);
+            } else {
+                renderTttGame();
+                handleTttEnd();
+            }
+        }
+
+        function makePapaAiMove() {
+            if (tttWinner) return;
+
+            // البحث عن أفضل حركة للأب البطل (AI مبسط حنون)
+            // 1. محاولة الفوز إذا كان هناك صفين متطابقين للأب
+            let move = findWinningMove('O');
+            
+            // 2. محاولة عرقلة دنيا إذا كانت على وشك الفوز
+            if (move === null) {
+                move = findWinningMove('X');
+            }
+            
+            // 3. أخذ المربع المركزي كأفضل خيار استراتيجي
+            if (move === null && tttBoard[4] === null) {
+                move = 4;
+            }
+            
+            // 4. اختيار مربع عشوائي متاح
+            if (move === null) {
+                const available = [];
+                tttBoard.forEach((cell, idx) => {
+                    if (cell === null) available.push(idx);
+                });
+                if (available.length > 0) {
+                    move = available[Math.floor(Math.random() * available.length)];
+                }
+            }
+
+            if (move !== null) {
+                tttBoard[move] = 'O';
+            }
+
+            isTttVsAiMoving = false;
+            checkTttWinner();
+            renderTttGame();
+            handleTttEnd();
+        }
+
+        function findWinningMove(player) {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // أفقي
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // رأسي
+                [0, 4, 8], [2, 4, 6]             // قطري
+            ];
+
+            for (let pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                const vals = [tttBoard[a], tttBoard[b], tttBoard[c]];
+                const playerCount = vals.filter(v => v === player).length;
+                const nullCount = vals.filter(v => v === null).length;
+
+                if (playerCount === 2 && nullCount === 1) {
+                    if (tttBoard[a] === null) return a;
+                    if (tttBoard[b] === null) return b;
+                    if (tttBoard[c] === null) return c;
+                }
+            }
+            return null;
+        }
+
+        function checkTttWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (let pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) {
+                    tttWinner = tttBoard[a];
+                    return;
+                }
+            }
+
+            if (tttBoard.every(cell => cell !== null)) {
+                tttWinner = 'draw';
+            }
+        }
+
+        function handleTttEnd() {
+            if (tttWinner === 'X') {
+                showToast('فوز ساحق يا بطلة! 🏆', 'كسبتي بابا البطل، لعبك ممتاز ومبهر أوي!');
+                burstHearts();
+                triggerPaternalMessage();
+            } else if (tttWinner === 'O') {
+                showToast('لعبة رائعة! ✨', 'بابا كسب المرة دي، بس انتي لعبتي بذكاء وتحدي حقيقي!');
+                triggerPaternalMessage();
+            } else if (tttWinner === 'draw') {
+                showToast('تعادل جميل! 🤝', 'مباراة ممتعة ومتكافئة جداً بينا!');
+            }
+        }
+
+
+        // 6. لعبة سودوكو دنيتي (Sudoku 4x4)
+        function initSudokuGame() {
+            // نسخ عميق لشبكة سودوكو الأساسية
+            sudokuBoard = JSON.parse(JSON.stringify(sudokuInitial));
+            renderSudokuGame();
+        }
+
+        function renderSudokuGame() {
+            const area = document.getElementById('activeGameArea');
+            
+            area.innerHTML = `
+                <div class="space-y-4 text-center">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs bg-indigo-500/20 text-indigo-300 py-1 px-3 rounded-full font-bold">سودوكو دنيتي الذكية (4×4) 🧩</span>
+                    </div>
+
+                    <p class="text-xs text-slate-300">املأي الفراغات بالأرقام من 1 إلى 4 بشرط عدم التكرار في الصف أو العمود:</p>
+
+                    <div class="grid grid-cols-4 gap-2.5 max-w-[200px] mx-auto bg-slate-900/40 p-3 rounded-2xl border border-white/5">
+                        ${sudokuBoard.map((row, rIdx) => {
+                            return row.map((cell, cIdx) => {
+                                const isInitial = sudokuInitial[rIdx][cIdx] !== null;
+                                if (isInitial) {
+                                    return `
+                                        <div class="h-10 w-10 flex items-center justify-center bg-violet-600/20 text-white font-black rounded-lg text-sm select-none border border-violet-500/20">
+                                            ${cell}
+                                        </div>
+                                    `;
+                                } else {
+                                    const val = cell !== null ? cell : '';
+                                    return `
+                                        <input type="number" min="1" max="4" oninput="handleSudokuInput(this, ${rIdx}, ${cIdx})" value="${val}" class="h-10 w-10 text-center bg-slate-900 border border-pink-500/30 hover:border-pink-500 text-pink-300 font-black rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-pink-500 tabular-nums">
+                                    `;
+                                }
+                            }).join('');
+                        }).join('')}
+                    </div>
+
+                    <div class="mt-4 flex justify-center gap-3">
+                        <button onclick="checkSudokuSolution()" class="py-2 px-5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-black rounded-xl shadow-md transition-all">تحقق من الحل 🔎</button>
+                        <button onclick="initSudokuGame()" class="py-2 px-4 bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold rounded-xl border border-white/10 transition-all">مسح ومحاولة تانية 🔄</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleSudokuInput(input, rIdx, cIdx) {
+            let val = parseInt(input.value);
+            if (isNaN(val) || val < 1 || val > 4) {
+                input.value = '';
+                sudokuBoard[rIdx][cIdx] = null;
+            } else {
+                sudokuBoard[rIdx][cIdx] = val;
+            }
+        }
+
+        function checkSudokuSolution() {
+            let isComplete = true;
+            let isCorrect = true;
+
+            // التحقق من المطابقة الكاملة للحل النموذجي المحفوظ
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (sudokuBoard[r][c] === null) {
+                        isComplete = false;
+                    } else if (sudokuBoard[r][c] !== sudokuSolution[r][c]) {
+                        isCorrect = false;
+                    }
+                }
+            }
+
+            if (!isComplete) {
+                showToast('سودوكو ناقصة', 'لسة فيه خانات فاضية يا دنيتي، كمليها وبابا معاكي! 💖', 'error');
+            } else if (isCorrect) {
+                showToast('مبروك الحل الصح! 🏆', 'عبقرية وشطورة، حليتي شبكة السودوكو بشكل صحيح وبدون أي غلطة!');
+                burstHearts();
+                triggerPaternalMessage();
+            } else {
+                showToast('تنبيه الحل فيه خطأ', 'فيه أرقام مش في مكانها الصحيح، جربي تراجعي الصفوف والأعمدة يا روحي! ❤️', 'error');
+            }
+        }
+
+
+        // 7. التبديل والتحكم بين تبويبات الألعاب
         function switchTab(tabId) {
             activeTab = tabId;
-            document.querySelectorAll('.game-tab').forEach(btn => {
-                btn.className = "game-tab py-2 px-1 text-[11px] font-black rounded-xl transition-all text-center " + 
-                    (isDarkMode ? "text-slate-300 hover:text-white bg-slate-900/20" : "text-slate-700 hover:text-rose-600 bg-white hover:bg-pink-100/60 border border-pink-200");
-            });
-            document.getElementById(`tab-${tabId}`).className = "game-tab py-2 px-1 text-[11px] font-black rounded-xl transition-all text-center bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-md";
             
-            document.getElementById('paternalRewardBox').classList.add('hidden');
-            renderGame(tabId);
-        }
+            // تحديث تصميم التبويبات النشطة وغير النشطة
+            const tabs = document.querySelectorAll('.game-tab');
+            tabs.forEach(btn => {
+                btn.className = "game-tab py-2 px-1 text-[11px] font-black rounded-xl transition-all text-center text-slate-300 hover:text-white bg-slate-900/20";
+            });
 
-        function renderGame(tabId) {
-            const area = document.getElementById('activeGameArea');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "game-tab py-2 px-1 text-[11px] font-black rounded-xl transition-all text-center bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-md";
+            }
+
+            // إخفاء صندوق جوائز الأب عند تبديل اللعبة لإتاحة فرصة فوز جديدة ممتعة
+            document.getElementById('paternalRewardBox').classList.add('hidden');
+
+            // تشغيل اللعبة المحددة فوراً
             if (tabId === 'match') {
-                initCardGame();
+                initMatchGame();
             } else if (tabId === 'wheel') {
                 initWheelGame();
             } else if (tabId === 'quiz') {
@@ -708,463 +1410,101 @@
             } else if (tabId === 'unscramble') {
                 initUnscrambleGame();
             } else if (tabId === 'tictactoe') {
-                initTTTGame();
+                initTttGame();
             } else if (tabId === 'sudoku') {
                 initSudokuGame();
             }
         }
 
-        // ==================== اللعبة 1: تطابق القلوب ====================
-        function initCardGame() {
-            const baseIcons = ['🧁', '👑', '🌈', '🍭'];
-            const pairIcons = [...baseIcons, ...baseIcons];
-            cardDeck = pairIcons.map((icon, idx) => ({ id: idx, icon })).sort(() => Math.random() - 0.5);
-            flippedIndices = [];
-            matchedIndices = [];
-            drawCardsGrid();
-        }
-
-        function drawCardsGrid() {
-            const area = document.getElementById('activeGameArea');
-            let cardsHTML = `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} mb-2 font-black">
-                        <span>أزواج متطابقة: ${matchedIndices.length / 2} / 4</span>
-                        <button onclick="initCardGame()" class="text-rose-500 hover:underline">إعادة اللعب 🔄</button>
-                    </div>
-                    <div class="grid grid-cols-4 gap-3">
-            `;
-            cardDeck.forEach((card, idx) => {
-                const isFlipped = flippedIndices.includes(idx) || matchedIndices.includes(idx);
-                let btnStyle = "";
-                if (isFlipped) {
-                    btnStyle = "bg-gradient-to-tr from-pink-500 to-rose-600 text-white shadow-inner scale-95";
-                } else {
-                    btnStyle = isDarkMode 
-                        ? "bg-[#2a1c4a] text-rose-300 hover:bg-[#392862] border border-pink-500/20" 
-                        : "bg-white text-rose-600 hover:bg-pink-100/80 border border-pink-300 shadow-sm";
-                }
-
-                cardsHTML += `
-                    <div onclick="handleCardClick(${idx})" class="aspect-square cursor-pointer rounded-2xl flex items-center justify-center text-2xl transition-all duration-300 ${btnStyle}">
-                        ${isFlipped ? card.icon : '❓'}
-                    </div>
-                `;
-            });
-            cardsHTML += `</div></div>`;
-            area.innerHTML = cardsHTML;
-        }
-
-        function handleCardClick(idx) {
-            if (flippedIndices.includes(idx) || matchedIndices.includes(idx) || flippedIndices.length >= 2) return;
-            flippedIndices.push(idx);
-            drawCardsGrid();
-
-            if (flippedIndices.length === 2) {
-                const [first, second] = flippedIndices;
-                if (cardDeck[first].icon === cardDeck[second].icon) {
-                    setTimeout(() => {
-                        matchedIndices.push(first, second);
-                        flippedIndices = [];
-                        drawCardsGrid();
-                        if (matchedIndices.length === cardDeck.length) {
-                            showPaternalSpeech("شطورة وذكية أوي يا دنيتي! خلصتي لعبة البطاقات بنجاح وسرعة.. ربي يحفظك ويسمع مني هذه الكلمات الجميلة: ");
-                        }
-                    }, 400);
-                } else {
-                    setTimeout(() => {
-                        flippedIndices = [];
-                        drawCardsGrid();
-                    }, 1000);
-                }
-            }
-        }
-
-        // ==================== اللعبة 2: عجلة الحظ ====================
-        function initWheelGame() {
-            const area = document.getElementById('activeGameArea');
-            area.innerHTML = `
-                <div class="flex flex-col items-center space-y-6">
-                    <div class="relative w-44 h-44">
-                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-2xl filter drop-shadow animate-bounce">👇</div>
-                        <div id="fortuneWheel" class="w-full h-full rounded-full border-4 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.2)] overflow-hidden relative" style="transform: rotate(0deg); transition: none; background: conic-gradient(from 0deg, #f43f5e 0deg 60deg, #8b5cf6 60deg 120deg, #3b82f6 120deg 180deg, #06b6d4 180deg 240deg, #10b981 240deg 300deg, #eab308 300deg 360deg)">
-                            <div class="absolute w-full h-full text-center flex items-center justify-center text-[8px] font-black text-white pointer-events-none" style="transform: rotate(0deg); clip-path: polygon(50% 50%, 100% 12%, 100% 88%)">
-                                <span class="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
-                            </div>
-                            <div class="absolute w-full h-full text-center flex items-center justify-center text-[8px] font-black text-white pointer-events-none" style="transform: rotate(60deg); clip-path: polygon(50% 50%, 100% 12%, 100% 88%)">
-                                <span class="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
-                            </div>
-                            <div class="absolute w-full h-full text-center flex items-center justify-center text-[8px] font-black text-white pointer-events-none" style="transform: rotate(120deg); clip-path: polygon(50% 50%, 100% 12%, 100% 88%)">
-                                <span class="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
-                            </div>
-                            <div class="absolute w-full h-full text-center flex items-center justify-center text-[8px] font-black text-white pointer-events-none" style="transform: rotate(180deg); clip-path: polygon(50% 50%, 100% 12%, 100% 88%)">
-                                <span class="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
-                            </div>
-                            <div class="absolute w-full h-full text-center flex items-center justify-center text-[8px] font-black text-white pointer-events-none" style="transform: rotate(240deg); clip-path: polygon(50% 50%, 100% 12%, 100% 88%)">
-                                <span class="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
-                            </div>
-                            <div class="absolute w-full h-full text-center flex items-center justify-center text-[8px] font-black text-white pointer-events-none" style="transform: rotate(300deg); clip-path: polygon(50% 50%, 100% 12%, 100% 88%)">
-                                <span class="mr-12 transform -rotate-90 origin-center">🎁 هدايا</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="spinTheWheel()" id="spinBtn" class="px-6 py-2.5 bg-gradient-to-r from-pink-500 via-rose-600 to-violet-600 hover:from-pink-600 hover:to-violet-700 text-white text-xs font-black rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95">لفي العجلة السحرية 💫</button>
-                </div>
-            `;
-        }
-
-        function spinTheWheel() {
-            if (isSpinning) return;
-            isSpinning = true;
-            document.getElementById('spinBtn').disabled = true;
-
-            const randomRotations = 6 + Math.floor(Math.random() * 4);
-            const randomSectorIdx = Math.floor(Math.random() * 6);
-            const sectorAngle = 360 / 6;
-            const targetDegrees = (randomRotations * 360) + (360 - (randomSectorIdx * sectorAngle) - (sectorAngle / 2));
-            
-            wheelRotation = targetDegrees;
-            const wheel = document.getElementById('fortuneWheel');
-            wheel.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.3, 1)';
-            wheel.style.transform = `rotate(${wheelRotation}deg)`;
-
-            setTimeout(() => {
-                isSpinning = false;
-                document.getElementById('spinBtn').disabled = false;
-                const outcomes = [
-                    "نصيحة ذهبية من بابا الغالي 💛",
-                    "رسالة دافئة تبهج قلبك الطيب 🤲",
-                    "وعد من بابا بدعمك للنهاية 🤝",
-                    "كلمة تفرح قلبك دايماً ⭐",
-                    "كلمات ملهمة لراحة بالك وتوفيقك 🍃",
-                    "حضن كبير من بابا ودعم دائم دايماً 🤗"
-                ];
-                const outcome = outcomes[randomSectorIdx];
-                showPaternalSpeech(`🎡 العجلة وقفت عند: [ ${outcome} ]`);
-            }, 4000);
-        }
-
-        // ==================== اللعبة 3: سؤال وجواب ديني ====================
-        function initQuizGame() {
-            currentQuizIndex = 0;
-            quizAnswered = false;
-            drawQuizScreen();
-        }
-
-        function drawQuizScreen() {
-            const area = document.getElementById('activeGameArea');
-            const q = quranicQuestionsColloquial[currentQuizIndex];
-            
-            let optionsHTML = "";
-            q.options.forEach((opt, idx) => {
-                let btnClass = isDarkMode 
-                    ? "bg-slate-900/60 border border-white/10 text-slate-300 hover:bg-slate-800/80"
-                    : "bg-white border border-pink-200 text-slate-800 hover:bg-pink-100/50 shadow-sm";
-
-                if (quizAnswered) {
-                    if (idx === q.correct) {
-                        btnClass = isDarkMode 
-                            ? "bg-emerald-950/40 border-emerald-500 text-emerald-300 font-bold"
-                            : "bg-emerald-100 border-emerald-400 text-emerald-800 font-bold";
-                    } else {
-                        btnClass = isDarkMode 
-                            ? "bg-slate-950/40 border-white/5 text-slate-500"
-                            : "bg-slate-100 border-slate-200 text-slate-400";
-                    }
-                }
-
-                optionsHTML += `
-                    <button onclick="handleQuizAnswer(${idx})" ${quizAnswered ? 'disabled' : ''} class="w-full py-3 px-4 rounded-xl text-xs font-bold text-right transition-all flex items-center justify-between ${btnClass}">
-                        <span>${opt}</span>
-                        ${quizAnswered && idx === q.correct ? '<span class="text-emerald-500 font-bold">إجابة صحيحة ✓</span>' : ''}
-                    </button>
-                `;
-            });
-
-            area.innerHTML = `
-                <div class="space-y-4 text-right">
-                    <div class="flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} font-bold">
-                        <span>السؤال ${currentQuizIndex + 1} من ${quranicQuestionsColloquial.length}</span>
-                    </div>
-                    <div class="${isDarkMode ? 'bg-[#22153d]/50 border-white/5' : 'bg-white border-pink-200'} p-4 rounded-xl border">
-                        <p class="text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-800'} leading-relaxed">${q.question}</p>
-                    </div>
-                    <div class="grid grid-cols-1 gap-2">${optionsHTML}</div>
-                    <div class="flex justify-between items-center pt-2">
-                        <button onclick="toggleQuizHint()" class="text-xs text-pink-500 hover:underline font-bold">عايزة تلميح من بابا؟ 💡</button>
-                        ${quizAnswered ? `<button onclick="nextQuizQuestion()" class="px-4 py-2 bg-pink-500/20 border border-pink-500/40 hover:border-pink-500 text-xs font-black text-pink-500 rounded-lg hover:text-white">${currentQuizIndex < quranicQuestionsColloquial.length - 1 ? 'السؤال التالي ⟵' : 'إنهاء الاختبار 🎉'}</button>` : ''}
-                    </div>
-                    <p id="quizHintText" class="text-[11px] ${isDarkMode ? 'text-slate-300 bg-slate-950/60' : 'text-slate-800 bg-white'} border border-pink-200 p-2.5 rounded-lg italic hidden leading-relaxed">${q.hint}</p>
-                </div>
-            `;
-        }
-
-        function handleQuizAnswer(idx) {
-            if (quizAnswered) return;
-            quizAnswered = true;
-            const q = quranicQuestionsColloquial[currentQuizIndex];
-            if (idx === q.correct) {
-                showPaternalSpeech("ما شاء الله عليكي يا بنوتة بابا العبقرية! إجابتك صحيحة مية مية.. ربي يزيدك نور وعلم ويسمع مني هذه الكلمات الطيبة:");
-            } else {
-                showPaternalSpeech(`محاولة طيبة يا دنيتي بس الإجابة الصح هي: [ ${q.options[q.correct]} ]`);
-            }
-            drawQuizScreen();
-        }
-
-        function toggleQuizHint() {
-            const hint = document.getElementById('quizHintText');
-            hint.classList.toggle('hidden');
-        }
-
-        function nextQuizQuestion() {
-            quizAnswered = false;
-            if (currentQuizIndex < quranicQuestionsColloquial.length - 1) {
-                currentQuizIndex++;
-                drawQuizScreen();
-            } else {
-                currentQuizIndex = 0;
-                drawQuizScreen();
-                showPaternalSpeech("الله أكبر! خلصتي اختبار بابا الديني الجميل كله.. ربنا يبارك في عقلِك وذكائِك ويجعلك دايماً نبتة صالحة وطيبة يا حبيبة بابا:");
-            }
-        }
-
-        // ==================== اللعبة 4: ترتيب الحروف المبعثرة ====================
-        function initUnscrambleGame() {
-            currentWordIndex = 0;
-            drawUnscrambleScreen();
-        }
-
-        function drawUnscrambleScreen() {
-            const area = document.getElementById('activeGameArea');
-            const w = wordGameDatabase[currentWordIndex];
-            area.innerHTML = `
-                <div class="space-y-4 text-right">
-                    <div class="${isDarkMode ? 'bg-[#22153d]/50 border-white/5' : 'bg-white border-pink-200'} p-4 rounded-xl border text-center">
-                        <span class="block text-[10px] text-slate-400 font-bold mb-1">رتبي الحروف المتبعثرة دي لتكتشفي كلمة طيبة:</span>
-                        <p class="text-2xl font-black text-rose-500 tracking-widest leading-relaxed">${w.jumbled}</p>
-                    </div>
-                    <form onsubmit="checkUnscramble(event)" class="space-y-2">
-                        <input type="text" id="unscrambleInput" placeholder="اكتبي الكلمة الصحيحة هنا..." class="w-full px-4 py-3 ${isDarkMode ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-pink-200 text-slate-800'} rounded-xl text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/50">
-                        <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-black rounded-xl text-xs hover:scale-[1.01]">تحقق من الكلمة 🌟</button>
-                    </form>
-                    <p id="unscrambleError" class="text-[11px] text-center text-rose-500 font-bold hidden">محاولة تانية.. بابا متأكد إنك هتعرفيها!</p>
-                    <div class="flex justify-between items-center pt-2">
-                        <button onclick="toggleUnscrambleHint()" class="text-xs text-pink-500 hover:underline font-bold">عايزة تلميح من بابا؟ 💡</button>
-                        <button onclick="nextUnscrambleWord()" class="px-4 py-2 bg-pink-500/20 border border-pink-500/40 text-xs font-black text-pink-500 rounded-lg">الكلمة التالية ⟵</button>
-                    </div>
-                    <p id="unscrambleHintText" class="text-[11px] ${isDarkMode ? 'text-slate-300 bg-slate-950/60' : 'text-slate-800 bg-white'} border border-pink-200 p-2.5 rounded-lg italic hidden">تلميح بابا الصغير: ${w.hint}</p>
-                </div>
-            `;
-        }
-
-        function checkUnscramble(e) {
+        // 8. التحكم في نظام تسجيل الدخول بحماية حنونة
+        function handleLogin(e) {
             e.preventDefault();
-            const correctWord = wordGameDatabase[currentWordIndex].correct;
-            const inputVal = document.getElementById('unscrambleInput').value.trim();
-            if (inputVal === correctWord) {
-                document.getElementById('unscrambleError').classList.add('hidden');
-                showPaternalSpeech(`برافو يا دنيتي! خمنتي الكلمة صح وهي كلمة "${correctWord}".. ربنا يجعل حياتك كلها مليانة بالصفة الجميلة دي`);
+            const pass = document.getElementById('passwordInput').value.trim().toLowerCase();
+            const errorDiv = document.getElementById('loginError');
+            const card = document.getElementById('loginCard');
+
+            // كلمات السر المقبولة والمحببة لسهولة الاستخدام والدعم المليء بالحب
+            const acceptedPasswords = ['دنيا', 'دنيتي', 'حبيبتي', 'روحي', '123', 'donia', 'love', 'donyty'];
+
+            if (acceptedPasswords.includes(pass)) {
+                // دخول ناجح
+                errorDiv.classList.add('hidden');
+                
+                // أنيميشن الخروج لشاشة الدخول ودخول المحتوى الرئيسي
+                document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    document.getElementById('login-screen').classList.add('hidden');
+                }, 500);
+
+                const mainContent = document.getElementById('main-content');
+                mainContent.classList.remove('hidden');
+                setTimeout(() => {
+                    mainContent.classList.add('opacity-100');
+                }, 50);
+
+                showToast('أهلاً بكِ في عالمنا السري 💖', 'نورتي بوابتكِ الخاصة وسجل ذكرياتك الدافئة يا روحي!');
+                burstHearts();
+                triggerPaternalMessage();
+                
+                // تشغيل الألعاب والعدادات المباشرة فور تسجيل الدخول الناجح
+                updateTimer();
+                setInterval(updateTimer, 1000);
+                renderMemories();
+                switchTab('match');
             } else {
-                document.getElementById('unscrambleError').classList.remove('hidden');
+                // فشل الدخول واهتزاز الشاشة التحذيري المميز
+                errorDiv.classList.remove('hidden');
+                card.classList.add('animate-shake');
+                setTimeout(() => { card.classList.remove('animate-shake'); }, 4000);
             }
         }
 
-        function toggleUnscrambleHint() {
-            const hint = document.getElementById('unscrambleHintText');
-            hint.classList.toggle('hidden');
-        }
+        // 9. التبديل المرئي بين المظهر الداكن والمظهر الفاتح
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            
+            const sunIcon = document.getElementById('sunIcon');
+            const moonIcon = document.getElementById('moonIcon');
+            const glow1 = document.getElementById('glow1');
+            const glow2 = document.getElementById('glow2');
+            const glow3 = document.getElementById('glow3');
 
-        function nextUnscrambleWord() {
-            currentWordIndex = (currentWordIndex + 1) % wordGameDatabase.length;
-            drawUnscrambleScreen();
-        }
+            // تعديل تصميم وتناسق الهالات والبطاقات حسب نمط المظهر المختار
+            if (isDarkMode) {
+                document.body.className = "bg-[#130a24] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-rose-500/30 custom-transition relative";
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                
+                glow1.className = "absolute top-[10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-pink-700/15 blur-[110px] animate-glow-1";
+                glow2.className = "absolute top-[40%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-violet-800/15 blur-[130px] animate-glow-2";
+                glow3.className = "absolute bottom-[-10%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-rose-600/15 blur-[120px] animate-glow-3";
 
-        // ==================== اللعبة 5: إكس أو ضد بابا ====================
-        function initTTTGame() {
-            tttBoard = Array(9).fill(null);
-            tttXNext = true;
-            tttWinner = null;
-            drawTTTBoard();
-        }
-
-        function drawTTTBoard() {
-            const area = document.getElementById('activeGameArea');
-            let boardHTML = `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} font-bold">
-                        <span>أنتِ بـ (X) وبابا بـ (O)</span>
-                        <button onclick="initTTTGame()" class="text-rose-500 hover:underline">إعادة اللعب 🔄</button>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 w-48 h-48 mx-auto">
-            `;
-            tttBoard.forEach((cell, idx) => {
-                let cellClass = "";
-                if (cell === 'X') {
-                    cellClass = "bg-pink-500/20 border-pink-500 text-pink-500 shadow-inner";
-                } else if (cell === 'O') {
-                    cellClass = "bg-violet-500/20 border-violet-500 text-violet-500 shadow-inner";
-                } else {
-                    cellClass = isDarkMode ? "bg-[#180d32] border-white/5 hover:bg-[#25154c] text-white" : "bg-white border-pink-200 hover:bg-pink-100/50 text-slate-800 shadow-sm";
-                }
-
-                boardHTML += `
-                    <button onclick="handleTTTClick(${idx})" class="w-full h-full rounded-xl flex items-center justify-center text-2xl font-black border transition-all ${cellClass}">
-                        ${cell || ''}
-                    </button>
-                `;
-            });
-            boardHTML += `</div>`;
-            if (tttWinner) {
-                boardHTML += `
-                    <div class="text-center mt-2">
-                        <p class="text-xs font-black text-rose-500">
-                            ${tttWinner === 'X' ? '🎉 كسبتي بابا يا بطلة!' : tttWinner === 'O' ? '🤝 بابا كسب المرة دي!' : '🤝 اللعبة خلصت تعادل جميل!'}
-                        </p>
-                    </div>
-                `;
-            }
-            boardHTML += `</div>`;
-            area.innerHTML = boardHTML;
-        }
-
-        function checkTTTWinner(squares) {
-            const lines = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ];
-            for (let i = 0; i < lines.length; i++) {
-                const [a, b, c] = lines[i];
-                if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-                    return squares[a];
-                }
-            }
-            if (squares.every(s => s !== null)) return 'Draw';
-            return null;
-        }
-
-        function handleTTTClick(idx) {
-            if (tttBoard[idx] || tttWinner || !tttXNext) return;
-            tttBoard[idx] = 'X';
-            drawTTTBoard();
-
-            tttWinner = checkTTTWinner(tttBoard);
-            if (tttWinner) {
-                handleTTTEnd(tttWinner);
-                return;
-            }
-
-            tttXNext = false;
-            // حركة الذكاء الاصطناعي لبابا
-            setTimeout(() => {
-                const emptyIndices = tttBoard.map((val, i) => val === null ? i : null).filter(val => val !== null);
-                if (emptyIndices.length > 0) {
-                    const randomMove = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-                    tttBoard[randomMove] = 'O';
-                    tttWinner = checkTTTWinner(tttBoard);
-                    tttXNext = true;
-                    drawTTTBoard();
-                    if (tttWinner) {
-                        handleTTTEnd(tttWinner);
-                    }
-                }
-            }, 450);
-        }
-
-        function handleTTTEnd(winner) {
-            if (winner === 'X') {
-                showPaternalSpeech("كسبتي بابا بجدارة وسرعة يا بطلة! دايماً شاطرة ومتميزة كدة يا رب.. ربنا يسعد قلبك ويسمع كلماتي الجميلة لكي:");
-            } else if (winner === 'O') {
-                showPaternalSpeech("بابا كسب المرة دي بالصدفة بس دايماً فوزك انتي هو فوز لبابا!");
+                // استعادة بطاقات المظهر المظلم الزجاجية الفاخرة
+                document.querySelectorAll('section, #modalContainer, #loginCard').forEach(el => {
+                    el.classList.add('glass-card-dark');
+                    el.classList.remove('glass-card-light');
+                });
             } else {
-                showPaternalSpeech("التعادل معناه إننا متفاهمين ومنسجمين على طول الخط يا حبيبة بابا! ربي يحفظك ويسمع منك هذه الرسالة الدافئة:");
+                document.body.className = "bg-rose-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-rose-200 custom-transition relative";
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+
+                glow1.className = "absolute top-[10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-pink-300/40 blur-[110px] animate-glow-1";
+                glow2.className = "absolute top-[40%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-violet-300/40 blur-[130px] animate-glow-2";
+                glow3.className = "absolute bottom-[-10%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-rose-300/40 blur-[120px] animate-glow-3";
+
+                // تحويل لبطاقات المظهر المضيء الناعمة والرقيقة
+                document.querySelectorAll('section, #modalContainer, #loginCard').forEach(el => {
+                    el.classList.add('glass-card-light');
+                    el.classList.remove('glass-card-dark');
+                });
             }
         }
 
-        // ==================== اللعبة 6: سودوكو دنيتي المطور ====================
-        function initSudokuGame() {
-            sudokuBoard = JSON.parse(JSON.stringify(sudokuInitial));
-            sudokuSuccess = false;
-            drawSudokuGrid();
-        }
-
-        function drawSudokuGrid() {
-            const area = document.getElementById('activeGameArea');
-            let gridHTML = `
-                <div class="space-y-4 text-right">
-                    <div class="flex justify-between items-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-700'} font-bold">
-                        <span>املئي المربعات بالأرقام من 1 لـ 4</span>
-                        <button onclick="initSudokuGame()" class="text-rose-500 hover:underline">إعادة البدء 🔄</button>
-                    </div>
-                    <div class="grid grid-cols-4 gap-2 w-44 h-44 mx-auto ${isDarkMode ? 'bg-[#1e113c]' : 'bg-pink-100/50'} p-2 rounded-xl border ${isDarkMode ? 'border-white/5' : 'border-pink-200'}">
-            `;
-
-            for (let r = 0; r < 4; r++) {
-                for (let c = 0; c < 4; c++) {
-                    const isReadOnly = sudokuInitial[r][c] !== null;
-                    const cellVal = sudokuBoard[r][c];
-                    
-                    let cellStyle = "";
-                    if (isReadOnly) {
-                        cellStyle = isDarkMode 
-                            ? "bg-slate-800/60 text-slate-400 cursor-not-allowed" 
-                            : "bg-pink-200/80 text-slate-600 cursor-not-allowed border border-pink-300";
-                    } else {
-                        cellStyle = isDarkMode 
-                            ? "bg-slate-900 text-pink-400 border border-pink-500/20" 
-                            : "bg-white text-pink-600 border border-pink-300 shadow-inner";
-                    }
-
-                    gridHTML += `
-                        <input type="text" maxLength="1" 
-                            ${isReadOnly || sudokuSuccess ? 'disabled' : ''} 
-                            value="${cellVal || ''}" 
-                            oninput="handleSudokuInput(event, ${r}, ${c})" 
-                            class="w-full h-full text-center text-lg font-black rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-400 ${cellStyle}" />
-                    `;
-                }
-            }
-
-            gridHTML += `
-                    </div>
-                    <div class="text-center space-y-2">
-                        <button onclick="verifySudoku()" ${sudokuSuccess ? 'disabled' : ''} class="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-600 disabled:opacity-50 text-white font-black rounded-xl text-xs hover:scale-[1.02] shadow-md">تحقق من الحل 🏆</button>
-                        <p id="sudokuError" class="text-[11px] text-rose-500 font-black hidden">امم.. في رقم مش في مكانه الصح يا دنيتي، راجعي الصفوف والأعمدة وجربي تاني!</p>
-                    </div>
-                </div>
-            `;
-            area.innerHTML = gridHTML;
-        }
-
-        function handleSudokuInput(e, row, col) {
-            const val = parseInt(e.target.value, 10);
-            if (isNaN(val) || val < 1 || val > 4) {
-                sudokuBoard[row][col] = null;
-            } else {
-                sudokuBoard[row][col] = val;
-            }
-        }
-
-        function verifySudoku() {
-            let isCorrect = true;
-            for (let r = 0; r < 4; r++) {
-                for (let c = 0; c < 4; c++) {
-                    if (sudokuBoard[r][c] !== sudokuSolution[r][c]) {
-                        isCorrect = false;
-                        break;
-                    }
-                }
-            }
-
-            if (isCorrect) {
-                sudokuSuccess = true;
-                document.getElementById('sudokuError').classList.add('hidden');
-                drawSudokuGrid();
-                showPaternalSpeech("الله عليكي يا عبقرية الأرقام! حليتي لغز أرقام السودوكو بنجاح باهر وبدون أي غلطة.. ربنا ينور طريقك يا دنيتي بالخير والذكاء دايماً:");
-            } else {
-                document.getElementById('sudokuError').classList.remove('hidden');
-            }
-        }
+        // تشغيل الخلفيات والمؤثرات التلقائية فور تحميل الصفحة بالكامل
+        window.onload = function() {
+            // startHeartsRain(); // تم إلغاء القلوب كما طلبت
+        };
     </script>
 </body>
 </html>
